@@ -18,7 +18,14 @@ app.use(cors({
   origin: (origin, callback) => {
     // Allow requests with no origin (like mobile apps, curl, server-to-server)
     if (!origin) return callback(null, true);
-    if (origin === CLIENT_URL || origin === 'http://localhost:5173' || origin === 'http://127.0.0.1:5173') {
+    if (
+      origin === CLIENT_URL ||
+      origin === 'http://localhost:5173' ||
+      origin === 'http://127.0.0.1:5173' ||
+      origin.endsWith('.vercel.app') ||
+      origin.endsWith('.netlify.app') ||
+      process.env.NODE_ENV !== 'production'
+    ) {
       return callback(null, true);
     }
     return callback(new Error(`CORS policy does not allow access from ${origin}`));
@@ -41,7 +48,7 @@ app.use('/api', feedbackRouter);
 app.use(errorHandler);
 
 // Start server if run directly
-if (process.env.NODE_ENV !== 'test') {
+if (process.env.NODE_ENV !== 'test' && !process.env.VERCEL) {
   app.listen(PORT, () => {
     console.log(`[Sparring Backend] Chamber server listening on port ${PORT}`);
     console.log(`[Sparring Backend] Client URL configured as: ${CLIENT_URL}`);

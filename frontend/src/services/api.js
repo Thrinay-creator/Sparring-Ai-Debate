@@ -4,7 +4,8 @@
  * Zero Gemini keys are exposed to the client.
  */
 
-const API_BASE = '/api';
+const rawApiUrl = (import.meta.env.VITE_API_URL || import.meta.env.VITE_BACKEND_URL || '').trim().replace(/\/+$/, '');
+const API_BASE = rawApiUrl ? (rawApiUrl.endsWith('/api') ? rawApiUrl : `${rawApiUrl}/api`) : '/api';
 
 export async function sendDebateTurn(payload) {
   try {
@@ -16,13 +17,18 @@ export async function sendDebateTurn(payload) {
       body: JSON.stringify(payload),
     });
 
-    const data = await res.json();
+    let data;
+    try {
+      data = await res.json();
+    } catch {
+      data = { message: `Server error (${res.status} ${res.statusText || 'Non-JSON response'})` };
+    }
 
     if (!res.ok) {
       return {
         success: false,
-        error: data.message || "Sparring couldn't respond. Check your connection and try again.",
-        code: data.code || 'UNKNOWN_ERROR',
+        error: data.message || `Backend error: HTTP ${res.status}`,
+        code: data.code || `HTTP_${res.status}`,
       };
     }
 
@@ -33,7 +39,9 @@ export async function sendDebateTurn(payload) {
   } catch (err) {
     return {
       success: false,
-      error: "Sparring couldn't respond. Check your connection and try again.",
+      error: err?.message?.includes('Failed to fetch')
+        ? "Unable to reach the backend server. Please verify your connection or server status."
+        : (err?.message || "Sparring couldn't respond. Check your connection and try again."),
       code: 'NETWORK_ERROR',
     };
   }
@@ -49,13 +57,18 @@ export async function generateFeedback(payload) {
       body: JSON.stringify(payload),
     });
 
-    const data = await res.json();
+    let data;
+    try {
+      data = await res.json();
+    } catch {
+      data = { message: `Server error (${res.status} ${res.statusText || 'Non-JSON response'})` };
+    }
 
     if (!res.ok) {
       return {
         success: false,
         error: data.message || "Could not generate feedback report. Please try again.",
-        code: data.code || 'UNKNOWN_ERROR',
+        code: data.code || `HTTP_${res.status}`,
       };
     }
 
@@ -66,7 +79,7 @@ export async function generateFeedback(payload) {
   } catch (err) {
     return {
       success: false,
-      error: "Network error occurred while analyzing the debate transcript.",
+      error: err?.message || "Network error occurred while analyzing the debate transcript.",
       code: 'NETWORK_ERROR',
     };
   }
