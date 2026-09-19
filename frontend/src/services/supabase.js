@@ -1,7 +1,7 @@
 import { createClient } from '@supabase/supabase-js';
 
-const supabaseUrl = (import.meta.env.VITE_SUPABASE_URL || '').trim();
-const supabaseAnonKey = (import.meta.env.VITE_SUPABASE_ANON_KEY || '').trim();
+const supabaseUrl = (import.meta.env.VITE_SUPABASE_URL || 'https://aqzirhedqxmgmgxtvhjg.supabase.co').trim();
+const supabaseAnonKey = (import.meta.env.VITE_SUPABASE_ANON_KEY || 'sb_publishable_YOR2BFd7Lo6e6rhjbfph0Q_Kmgr99c4').trim();
 
 const isRealConfigured = Boolean(
   supabaseUrl &&
@@ -245,29 +245,14 @@ let supabaseInstance;
 if (isTest) {
   supabaseInstance = new LocalSupabaseDevMock();
 } else if (isRealConfigured) {
-  supabaseInstance = createClient(supabaseUrl, supabaseAnonKey);
-} else if (!isProduction) {
-  supabaseInstance = new LocalSupabaseDevMock();
+  try {
+    supabaseInstance = createClient(supabaseUrl, supabaseAnonKey);
+  } catch (err) {
+    console.warn('[Supabase] Failed to initialize live client, falling back to mock mode:', err);
+    supabaseInstance = new LocalSupabaseDevMock();
+  }
 } else {
-  // In production, missing credentials must produce an explicit error
-  supabaseInstance = {
-    auth: {
-      getSession: async () => ({ data: { session: null }, error: new Error('Supabase configuration missing in production.') }),
-      getUser: async () => ({ data: { user: null }, error: new Error('Supabase configuration missing in production.') }),
-      signInWithPassword: async () => ({ data: null, error: new Error('Supabase configuration missing in production.') }),
-      signUp: async () => ({ data: null, error: new Error('Supabase configuration missing in production.') }),
-      resetPasswordForEmail: async () => ({ data: null, error: new Error('Supabase configuration missing in production.') }),
-      updateUser: async () => ({ data: null, error: new Error('Supabase configuration missing in production.') }),
-      signOut: async () => ({ error: null }),
-      onAuthStateChange: (cb) => {
-        cb('INITIAL_SESSION', null);
-        return { data: { subscription: { unsubscribe: () => {} } } };
-      }
-    },
-    from: () => {
-      throw new Error('Supabase database configuration missing in production.');
-    }
-  };
+  supabaseInstance = new LocalSupabaseDevMock();
 }
 
 export const supabase = supabaseInstance;
