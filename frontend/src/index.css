@@ -1,0 +1,122 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root, [data-theme="chamber"] {
+  --chamber-bg: #11141A;
+  --chamber-surface: #1C2129;
+  --chamber-surface-alt: #161B22;
+  --chamber-border: #28303B;
+  --chamber-muted: #94A3B8;
+  --chamber-text: #F3F4F6;
+  --chamber-amber: #F59E0B;
+  --chamber-amber-dark: #B45309;
+  --chamber-user: #38BDF8;
+  --chamber-user-bg: #13283B;
+  --chamber-user-border: #1E4768;
+  --chamber-ai: #FB923C;
+  --chamber-ai-bg: #351B12;
+  --chamber-ai-border: #642E1B;
+}
+
+[data-theme="chamber-light"] {
+  --chamber-bg: #F8FAFC;
+  --chamber-surface: #FFFFFF;
+  --chamber-surface-alt: #F1F5F9;
+  --chamber-border: #CBD5E1;
+  --chamber-muted: #64748B;
+  --chamber-text: #0F172A;
+  --chamber-amber: #D97706;
+  --chamber-amber-dark: #92400E;
+  --chamber-user: #0284C7;
+  --chamber-user-bg: #E0F2FE;
+  --chamber-user-border: #7DD3FC;
+  --chamber-ai: #EA580C;
+  --chamber-ai-bg: #FFEDD5;
+  --chamber-ai-border: #FDBA74;
+}
+
+@layer base {
+  body {
+    background-color: var(--chamber-bg);
+    color: var(--chamber-text);
+    font-family: 'Inter', system-ui, -apple-system, sans-serif;
+  }
+
+  h1, h2, h3, .font-serif {
+    font-family: 'DM Serif Display', Georgia, serif;
+  }
+}
+
+/* Light theme overrides for containers and borders */
+[data-theme="chamber-light"] body {
+  background-color: #F8FAFC !important;
+  color: #0F172A !important;
+}
+
+[data-theme="chamber-light"] .bg-\[\#11141A\] {
+  background-color: #F8FAFC !important;
+}
+
+[data-theme="chamber-light"] .bg-\[\#161B22\] {
+  background-color: #F1F5F9 !important;
+}
+
+[data-theme="chamber-light"] .bg-\[\#161B22\]\/90 {
+  background-color: rgba(241, 245, 249, 0.9) !important;
+}
+
+[data-theme="chamber-light"] .bg-\[\#161B22\]\/95 {
+  background-color: rgba(241, 245, 249, 0.95) !important;
+}
+
+[data-theme="chamber-light"] .bg-\[\#161B22\]\/60 {
+  background-color: rgba(241, 245, 249, 0.8) !important;
+}
+
+[data-theme="chamber-light"] .bg-\[\#14181F\] {
+  background-color: #F1F5F9 !important;
+}
+
+[data-theme="chamber-light"] .bg-\[\#1C2129\] {
+  background-color: #FFFFFF !important;
+}
+
+[data-theme="chamber-light"] .text-slate-100,
+[data-theme="chamber-light"] .text-slate-200 {
+  color: #0F172A !important;
+}
+
+[data-theme="chamber-light"] .text-slate-300 {
+  color: #334155 !important;
+}
+
+[data-theme="chamber-light"] input,
+[data-theme="chamber-light"] textarea {
+  color: #0F172A !important;
+}
+
+/* Custom scrollbars */
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+
+::-webkit-scrollbar-track {
+  background: var(--chamber-bg);
+}
+
+::-webkit-scrollbar-thumb {
+  background: var(--chamber-border);
+  border-radius: 3px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: var(--chamber-muted);
+}
+
+/* Restrained focus ring */
+button:focus-visible, input:focus-visible, textarea:focus-visible {
+  outline: 2px solid var(--chamber-amber);
+  outline-offset: 1px;
+}
