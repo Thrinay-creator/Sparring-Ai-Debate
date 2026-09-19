@@ -227,6 +227,9 @@ export function AuthProvider({ children }) {
       console.warn('Signout warning:', err?.message);
     } finally {
       setIsGuest(false);
+      try {
+        sessionStorage.removeItem('sparring_session_unlocked');
+      } catch {}
       setCurrentUser(null);
       setAuthStatus('unauthenticated');
       setIsPasswordRecovery(false);

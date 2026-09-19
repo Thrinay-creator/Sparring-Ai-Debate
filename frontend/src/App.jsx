@@ -23,6 +23,13 @@ export default function App() {
   const { user, isAuthenticated, isGuest, authLoading, logout } = useAuth();
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
   const [redirectTarget, setRedirectTarget] = useState(null);
+  const [isSessionUnlocked, setIsSessionUnlocked] = useState(() => {
+    try {
+      return typeof window !== 'undefined' && sessionStorage.getItem('sparring_session_unlocked') === 'true';
+    } catch {
+      return false;
+    }
+  });
 
   const {
     stage,
@@ -52,8 +59,8 @@ export default function App() {
     // 1. Never redirect while auth is initializing
     if (authLoading) return;
 
-    // 2. Unauthenticated user (neither signed in nor explicit guest)
-    if (!isAuthenticated && !isGuest) {
+    // 2. New visit without explicit login/guest choice, or unauthenticated user
+    if (!isSessionUnlocked || (!isAuthenticated && !isGuest)) {
       if (currentPath === '/history') {
         setRedirectTarget('/history');
         navigate('/login');
@@ -69,7 +76,7 @@ export default function App() {
       navigate('/login');
       return;
     }
-  }, [authLoading, isAuthenticated, isGuest, currentPath, navigate]);
+  }, [authLoading, isAuthenticated, isGuest, isSessionUnlocked, currentPath, navigate]);
 
   // Cleanly reset active debate state if user logs out
   useEffect(() => {
@@ -86,10 +93,11 @@ export default function App() {
         authLoading,
         hasSession: !!user,
         guestMode: isGuest,
+        sessionUnlocked: isSessionUnlocked,
         pathname: currentPath
       });
     }
-  }, [authLoading, user, isGuest, currentPath]);
+  }, [authLoading, user, isGuest, isSessionUnlocked, currentPath]);
 
   // Prevent flash while verifying auth status
   if (authLoading) {
@@ -104,6 +112,10 @@ export default function App() {
   }
 
   const handleAuthSuccess = () => {
+    try {
+      sessionStorage.setItem('sparring_session_unlocked', 'true');
+    } catch {}
+    setIsSessionUnlocked(true);
     const destination = redirectTarget || '/';
     setRedirectTarget(null);
     navigate(destination);
@@ -149,16 +161,16 @@ export default function App() {
         />
       )}
 
-      {/* Fallback to LoginPage for unauthenticated access at root / */}
-      {currentPath === '/' && !isAuthenticated && !isGuest && (
+      {/* Fallback to LoginPage for unauthenticated or locked access at root / */}
+      {currentPath === '/' && (!isSessionUnlocked || (!isAuthenticated && !isGuest)) && (
         <LoginPage
           onNavigate={navigate}
           onSuccess={handleAuthSuccess}
         />
       )}
 
-      {/* Main Debate Stages (Route: /) - Accessible to Authenticated or Guest users */}
-      {currentPath === '/' && (isAuthenticated || isGuest) && stage === 'SETUP' && (
+      {/* Main Debate Stages (Route: /) - Accessible when session unlocked & (Authenticated or Guest) */}
+      {currentPath === '/' && isSessionUnlocked && (isAuthenticated || isGuest) && stage === 'SETUP' && (
         <SetupPage
           onStartDebate={startDebate}
           pastSessions={pastSessions}
@@ -169,7 +181,7 @@ export default function App() {
         />
       )}
 
-      {currentPath === '/' && (isAuthenticated || isGuest) && (stage === 'DEBATING' || stage === 'WAITING_FOR_AI' || stage === 'FINISHING') && (
+      {currentPath === '/' && isSessionUnlocked && (isAuthenticated || isGuest) && (stage === 'DEBATING' || stage === 'WAITING_FOR_AI' || stage === 'FINISHING') && (
         <DebatePage
           session={session}
           stage={stage}
@@ -185,7 +197,7 @@ export default function App() {
         />
       )}
 
-      {currentPath === '/' && (isAuthenticated || isGuest) && stage === 'SUMMARY' && (
+      {currentPath === '/' && isSessionUnlocked && (isAuthenticated || isGuest) && stage === 'SUMMARY' && (
         <SummaryPage
           session={session}
           onStartNewDebate={resetToSetup}
