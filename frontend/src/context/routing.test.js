@@ -28,121 +28,149 @@ describe('Routing & Initial Entry Route Protection Tests', () => {
     localStore.clear();
   });
 
-  it('unauthenticated user visits / and stays on / (Home Debate Setup) without redirecting to /login', () => {
-    const isAuthenticated = false;
-    const isGuest = sessionStorage.getItem('sparring_is_guest') === 'true';
-    const currentPath = '/';
+  it('TEST 1: unauthenticated user visits / and is redirected to /login; refresh on /login stays on /login', () => {
+    const AUTH_ROUTES = ['/login', '/signup', '/forgot-password', '/reset-password'];
+    let isAuthenticated = false;
+    let isGuest = sessionStorage.getItem('sparring_is_guest') === 'true';
+    let currentPath = '/';
 
     let navigatedTo = null;
-    // Protected routes are only /history when unauthenticated
-    if (!isAuthenticated && !isGuest && currentPath === '/history') {
-      navigatedTo = '/login';
+    if (!isAuthenticated && !isGuest) {
+      if (currentPath === '/history') {
+        navigatedTo = '/login';
+      } else if (!AUTH_ROUTES.includes(currentPath)) {
+        navigatedTo = '/login';
+      }
     }
 
     expect(isGuest).toBe(false);
-    expect(navigatedTo).toBeNull(); // Stays on '/'!
-  });
+    expect(navigatedTo).toBe('/login');
 
-  it('unauthenticated user navigating to /history redirects to /login and saves /history as redirectTarget', () => {
-    const isAuthenticated = false;
-    const isGuest = sessionStorage.getItem('sparring_is_guest') === 'true';
-    const currentPath = '/history';
-
-    let navigatedTo = null;
-    let redirectTarget = null;
-
+    // User is now on /login; refresh
+    currentPath = '/login';
+    navigatedTo = null;
     if (!isAuthenticated && !isGuest) {
       if (currentPath === '/history') {
-        redirectTarget = '/history';
+        navigatedTo = '/login';
+      } else if (!AUTH_ROUTES.includes(currentPath)) {
         navigatedTo = '/login';
       }
     }
-
-    expect(navigatedTo).toBe('/login');
-    expect(redirectTarget).toBe('/history');
-
-    // After login success, destination should be redirectTarget
-    const dest = redirectTarget || '/';
-    expect(dest).toBe('/history');
+    expect(navigatedTo).toBeNull(); // Stays on /login, not /
   });
 
-  it('continuing as guest marks sessionStorage and allows access to / without redirecting to /login', () => {
-    // User clicks Continue as Guest
-    sessionStorage.setItem('sparring_is_guest', 'true');
-
+  it('TEST 2: opening /login and refreshing remains on /login', () => {
+    const AUTH_ROUTES = ['/login', '/signup', '/forgot-password', '/reset-password'];
     const isAuthenticated = false;
-    const isGuest = sessionStorage.getItem('sparring_is_guest') === 'true';
+    const isGuest = false;
+    const currentPath = '/login';
+
+    let navigatedTo = null;
+    if (!isAuthenticated && !isGuest && !AUTH_ROUTES.includes(currentPath)) {
+      navigatedTo = '/login';
+    }
+    expect(navigatedTo).toBeNull(); // Stays on /login
+  });
+
+  it('TEST 3: opening /signup and refreshing remains on /signup', () => {
+    const AUTH_ROUTES = ['/login', '/signup', '/forgot-password', '/reset-password'];
+    const isAuthenticated = false;
+    const isGuest = false;
+    const currentPath = '/signup';
+
+    let navigatedTo = null;
+    if (!isAuthenticated && !isGuest && !AUTH_ROUTES.includes(currentPath)) {
+      navigatedTo = '/login';
+    }
+    expect(navigatedTo).toBeNull(); // Stays on /signup
+  });
+
+  it('TEST 4: opening /forgot-password and refreshing remains on /forgot-password', () => {
+    const AUTH_ROUTES = ['/login', '/signup', '/forgot-password', '/reset-password'];
+    const isAuthenticated = false;
+    const isGuest = false;
+    const currentPath = '/forgot-password';
+
+    let navigatedTo = null;
+    if (!isAuthenticated && !isGuest && !AUTH_ROUTES.includes(currentPath)) {
+      navigatedTo = '/login';
+    }
+    expect(navigatedTo).toBeNull(); // Stays on /forgot-password
+  });
+
+  it('TEST 5: authenticated user visits / and refreshes; remains on /', () => {
+    const AUTH_ROUTES = ['/login', '/signup', '/forgot-password', '/reset-password'];
+    const isAuthenticated = true;
+    const isGuest = false;
     const currentPath = '/';
 
     let navigatedTo = null;
     if (!isAuthenticated && !isGuest) {
-      if (currentPath === '/') {
+      if (!AUTH_ROUTES.includes(currentPath)) {
         navigatedTo = '/login';
       }
     }
-
-    expect(isGuest).toBe(true);
-    expect(navigatedTo).toBeNull(); // Stays on '/'!
+    expect(navigatedTo).toBeNull(); // Remains on /
   });
 
-  it('refreshing during active debate preserves guest status from sessionStorage', () => {
-    // Active guest session
+  it('TEST 6: authenticated user visits /history and refreshes; remains on /history', () => {
+    const isAuthenticated = true;
+    const isGuest = false;
+    const currentPath = '/history';
+
+    let navigatedTo = null;
+    if (!isAuthenticated && !isGuest) {
+      navigatedTo = '/login';
+    } else if (isGuest && currentPath === '/history') {
+      navigatedTo = '/login';
+    }
+    expect(navigatedTo).toBeNull(); // Remains on /history
+  });
+
+  it('TEST 7: logout and refresh stays on /login', () => {
+    // Logout clears guest session
+    sessionStorage.removeItem('sparring_is_guest');
+    const isAuthenticated = false;
+    const isGuest = sessionStorage.getItem('sparring_is_guest') === 'true';
+    const currentPath = '/login';
+
+    const AUTH_ROUTES = ['/login', '/signup', '/forgot-password', '/reset-password'];
+    let navigatedTo = null;
+    if (!isAuthenticated && !isGuest && !AUTH_ROUTES.includes(currentPath)) {
+      navigatedTo = '/login';
+    }
+    expect(isGuest).toBe(false);
+    expect(navigatedTo).toBeNull(); // Stays on /login
+  });
+
+  it('TEST 8: Continue as Guest navigates to /, refresh preserves guest and active debate', () => {
+    // User clicks Continue as Guest
     sessionStorage.setItem('sparring_is_guest', 'true');
     localStorage.setItem('sparring_active_session', JSON.stringify({
-      topic: 'Artificial Intelligence is conscious',
+      sessionId: 'test-session-123',
+      topic: 'AI Regulation',
       userStance: 'FOR',
       difficulty: 'SHARP',
       round: 2,
       transcript: []
     }));
 
-    // Page refresh re-evaluates session
-    const isGuest = sessionStorage.getItem('sparring_is_guest') === 'true';
-    const isAuthenticated = false;
-    const currentPath = '/';
-
-    let redirected = false;
-    if (!isAuthenticated && !isGuest && currentPath === '/') {
-      redirected = true;
-    }
-
-    expect(isGuest).toBe(true);
-    expect(redirected).toBe(false);
-
-    // Active session remains readable
-    const session = JSON.parse(localStorage.getItem('sparring_active_session'));
-    expect(session.topic).toBe('Artificial Intelligence is conscious');
-  });
-
-  it('authenticated user opening /login is redirected to /', () => {
-    const isAuthenticated = true;
-    const currentPath = '/login';
-    let redirectTarget = null;
-    let navigatedTo = null;
-
-    if (isAuthenticated && currentPath === '/login') {
-      navigatedTo = redirectTarget || '/';
-    }
-
-    expect(navigatedTo).toBe('/');
-  });
-
-  it('signing out clears guest sessionStorage and returns unauthenticated state', () => {
-    sessionStorage.setItem('sparring_is_guest', 'true');
-    expect(sessionStorage.getItem('sparring_is_guest')).toBe('true');
-
-    // Sign out action
-    sessionStorage.removeItem('sparring_is_guest');
     const isAuthenticated = false;
     const isGuest = sessionStorage.getItem('sparring_is_guest') === 'true';
+    const currentPath = '/';
 
     let navigatedTo = null;
-    const currentPath = '/';
-    if (!isAuthenticated && !isGuest) {
+    const AUTH_ROUTES = ['/login', '/signup', '/forgot-password', '/reset-password'];
+    if (!isAuthenticated && !isGuest && !AUTH_ROUTES.includes(currentPath)) {
       navigatedTo = '/login';
     }
 
-    expect(isGuest).toBe(false);
-    expect(navigatedTo).toBe('/login');
+    expect(isGuest).toBe(true);
+    expect(navigatedTo).toBeNull(); // Allowed on /
+
+    // Active session remains readable across refresh
+    const restored = JSON.parse(localStorage.getItem('sparring_active_session'));
+    expect(restored.sessionId).toBe('test-session-123');
+    expect(restored.topic).toBe('AI Regulation');
   });
 });

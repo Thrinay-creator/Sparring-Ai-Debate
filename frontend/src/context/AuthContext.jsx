@@ -9,9 +9,33 @@ export function AuthProvider({ children }) {
   const [isPasswordRecovery, setIsPasswordRecovery] = useState(false);
   const [error, setError] = useState(null);
 
+  const getIsGuest = useCallback(() => {
+    try {
+      if (typeof window === 'undefined') return false;
+      return localStorage.getItem('sparring_is_guest') === 'true' ||
+             sessionStorage.getItem('sparring_is_guest') === 'true';
+    } catch {
+      return false;
+    }
+  }, []);
+
+  const setIsGuest = useCallback((val) => {
+    try {
+      if (typeof window === 'undefined') return;
+      if (val) {
+        localStorage.setItem('sparring_is_guest', 'true');
+        sessionStorage.setItem('sparring_is_guest', 'true');
+      } else {
+        localStorage.removeItem('sparring_is_guest');
+        sessionStorage.removeItem('sparring_is_guest');
+      }
+    } catch {}
+  }, []);
+
   // Initialize session and attach listener
   useEffect(() => {
     let mounted = true;
+    let subscription = null;
 
     // Check for password recovery hash in URL e.g. #type=recovery
     if (window.location.hash && window.location.hash.includes('type=recovery')) {
@@ -25,10 +49,11 @@ export function AuthProvider({ children }) {
 
         if (mounted) {
           if (session?.user) {
+            setIsGuest(false);
             setCurrentUser(session.user);
             setAuthStatus('authenticated');
           } else {
-            const isGuestSession = typeof window !== 'undefined' && sessionStorage.getItem('sparring_is_guest') === 'true';
+            const isGuestSession = getIsGuest();
             setCurrentUser(null);
             setAuthStatus(isGuestSession ? 'guest' : 'unauthenticated');
           }
@@ -36,43 +61,46 @@ export function AuthProvider({ children }) {
       } catch (err) {
         console.warn('[AuthContext] Session init warning:', err?.message || err);
         if (mounted) {
-          const isGuestSession = typeof window !== 'undefined' && sessionStorage.getItem('sparring_is_guest') === 'true';
+          const isGuestSession = getIsGuest();
           setCurrentUser(null);
           setAuthStatus(isGuestSession ? 'guest' : 'unauthenticated');
         }
+      }
+
+      if (mounted) {
+        // Register onAuthStateChange after getSession check
+        const { data } = supabase.auth.onAuthStateChange((event, session) => {
+          if (!mounted) return;
+
+          console.log(`[AuthContext] Auth event: ${event}`);
+
+          if (event === 'PASSWORD_RECOVERY') {
+            setIsPasswordRecovery(true);
+          }
+
+          if (session?.user) {
+            setIsGuest(false);
+            setCurrentUser(session.user);
+            setAuthStatus('authenticated');
+          } else {
+            const isGuestSession = getIsGuest();
+            setCurrentUser(null);
+            setAuthStatus(isGuestSession ? 'guest' : 'unauthenticated');
+          }
+        });
+        subscription = data?.subscription;
       }
     }
 
     initAuth();
 
-    // Supabase auth state listener handling all event states
-    const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
-      if (!mounted) return;
-
-      console.log(`[AuthContext] Auth event: ${event}`);
-
-      if (event === 'PASSWORD_RECOVERY') {
-        setIsPasswordRecovery(true);
-      }
-
-      if (session?.user) {
-        if (typeof window !== 'undefined') {
-          sessionStorage.removeItem('sparring_is_guest');
-        }
-        setCurrentUser(session.user);
-        setAuthStatus('authenticated');
-      } else {
-        const isGuestSession = typeof window !== 'undefined' && sessionStorage.getItem('sparring_is_guest') === 'true';
-        setCurrentUser(null);
-        setAuthStatus(isGuestSession ? 'guest' : 'unauthenticated');
-      }
-    });
-
     return () => {
       mounted = false;
-      subscription?.unsubscribe();
+      if (subscription?.unsubscribe) {
+        subscription.unsubscribe();
+      }
     };
-  }, []);
+  }, [getIsGuest, setIsGuest]);
 
   // Email / Password Login
   const login = useCallback(async (email, password) => {
@@ -185,12 +213,10 @@ export function AuthProvider({ children }) {
 
   // Continue as Guest explicitly
   const continueAsGuest = useCallback(() => {
-    if (typeof window !== 'undefined') {
-      sessionStorage.setItem('sparring_is_guest', 'true');
-    }
+    setIsGuest(true);
     setCurrentUser(null);
     setAuthStatus('guest');
-  }, []);
+  }, [setIsGuest]);
 
   // Sign out
   const signOut = useCallback(async () => {
@@ -200,14 +226,12 @@ export function AuthProvider({ children }) {
     } catch (err) {
       console.warn('Signout warning:', err?.message);
     } finally {
-      if (typeof window !== 'undefined') {
-        sessionStorage.removeItem('sparring_is_guest');
-      }
+      setIsGuest(false);
       setCurrentUser(null);
       setAuthStatus('unauthenticated');
       setIsPasswordRecovery(false);
     }
-  }, []);
+  }, [setIsGuest]);
 
   return (
     <AuthContext.Provider

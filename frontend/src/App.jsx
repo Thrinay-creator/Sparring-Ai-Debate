@@ -45,32 +45,51 @@ export default function App() {
     },
   });
 
-  // Guard routes: Protect /history for unauthenticated users, and redirect authenticated users away from /login
+  const AUTH_ROUTES = ['/login', '/signup', '/forgot-password', '/reset-password'];
+
+  // Guard routes: Protect routes based on initialized authentication status
   useEffect(() => {
+    // 1. Never redirect while auth is initializing
     if (authLoading) return;
 
-    // 1. Unauthenticated user accessing protected /history route
+    // 2. Unauthenticated user (neither signed in nor explicit guest)
     if (!isAuthenticated && !isGuest) {
       if (currentPath === '/history') {
         setRedirectTarget('/history');
         navigate('/login');
+      } else if (!AUTH_ROUTES.includes(currentPath)) {
+        navigate('/login');
       }
+      return;
     }
 
-    // 2. Authenticated user opening /login
-    if (isAuthenticated && currentPath === '/login') {
-      const destination = redirectTarget || '/';
-      setRedirectTarget(null);
-      navigate(destination);
+    // 3. Guest user accessing protected /history route
+    if (isGuest && currentPath === '/history') {
+      setRedirectTarget('/history');
+      navigate('/login');
+      return;
     }
-  }, [authLoading, isAuthenticated, isGuest, currentPath, navigate, redirectTarget]);
+  }, [authLoading, isAuthenticated, isGuest, currentPath, navigate]);
 
   // Cleanly reset active debate state if user logs out
   useEffect(() => {
+    if (authLoading) return;
     if (!isAuthenticated && !isGuest && stage !== 'SETUP') {
       resetToSetup();
     }
-  }, [isAuthenticated, isGuest, stage, resetToSetup]);
+  }, [authLoading, isAuthenticated, isGuest, stage, resetToSetup]);
+
+  // Safe console debugging for production diagnostics (no tokens, passwords, or secrets)
+  useEffect(() => {
+    if (!authLoading) {
+      console.log('[Sparring Auth Diagnostic]', {
+        authLoading,
+        hasSession: !!user,
+        guestMode: isGuest,
+        pathname: currentPath
+      });
+    }
+  }, [authLoading, user, isGuest, currentPath]);
 
   // Prevent flash while verifying auth status
   if (authLoading) {
@@ -130,8 +149,16 @@ export default function App() {
         />
       )}
 
-      {/* Main Debate Stages (Route: /) */}
-      {currentPath === '/' && stage === 'SETUP' && (
+      {/* Fallback to LoginPage for unauthenticated access at root / */}
+      {currentPath === '/' && !isAuthenticated && !isGuest && (
+        <LoginPage
+          onNavigate={navigate}
+          onSuccess={handleAuthSuccess}
+        />
+      )}
+
+      {/* Main Debate Stages (Route: /) - Accessible to Authenticated or Guest users */}
+      {currentPath === '/' && (isAuthenticated || isGuest) && stage === 'SETUP' && (
         <SetupPage
           onStartDebate={startDebate}
           pastSessions={pastSessions}
@@ -142,7 +169,7 @@ export default function App() {
         />
       )}
 
-      {currentPath === '/' && (stage === 'DEBATING' || stage === 'WAITING_FOR_AI' || stage === 'FINISHING') && (
+      {currentPath === '/' && (isAuthenticated || isGuest) && (stage === 'DEBATING' || stage === 'WAITING_FOR_AI' || stage === 'FINISHING') && (
         <DebatePage
           session={session}
           stage={stage}
@@ -158,7 +185,7 @@ export default function App() {
         />
       )}
 
-      {currentPath === '/' && stage === 'SUMMARY' && (
+      {currentPath === '/' && (isAuthenticated || isGuest) && stage === 'SUMMARY' && (
         <SummaryPage
           session={session}
           onStartNewDebate={resetToSetup}

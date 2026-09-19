@@ -28,8 +28,9 @@ export function useRouter() {
   }, []);
 
   const navigate = useCallback((toPath) => {
-    if (toPath === window.location.pathname) return;
-    window.history.pushState({}, '', toPath);
+    if (toPath !== window.location.pathname) {
+      window.history.pushState({}, '', toPath);
+    }
     setCurrentPath(toPath);
     window.scrollTo(0, 0);
   }, []);
