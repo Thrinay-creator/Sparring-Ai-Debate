@@ -102,6 +102,13 @@ export default function ArgumentInput({
           </div>
         )}
 
+        {voiceState === 'PROCESSING' && (
+          <div className="flex items-center gap-2 text-xs text-chamber-amber font-medium px-2 py-1">
+            <span className="w-2 h-2 rounded-full bg-chamber-amber animate-pulse"></span>
+            <span>Processing speech...</span>
+          </div>
+        )}
+
         {voiceState === 'AI_SPEAKING' && (
           <div className="flex items-center gap-2 text-xs text-chamber-ai font-medium px-2 py-1">
             <span className="w-2 h-2 rounded-full bg-chamber-ai animate-ping"></span>

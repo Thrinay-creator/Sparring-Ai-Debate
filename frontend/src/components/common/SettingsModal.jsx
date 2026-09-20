@@ -1,10 +1,19 @@
 import React, { useEffect, useRef } from 'react';
-import { Settings, X, Sun, Moon, Monitor, Check, Globe } from 'lucide-react';
+import { Settings, X, Sun, Moon, Monitor, Check, Globe, Gauge, User, ShieldCheck } from 'lucide-react';
 import { useLanguage } from '../../i18n';
+import { useAuth } from '../../context/AuthContext';
 
-export default function SettingsModal({ isOpen, onClose, theme, onSelectTheme }) {
+export default function SettingsModal({
+  isOpen,
+  onClose,
+  theme,
+  onSelectTheme,
+  voiceSpeed = 1.0,
+  onSelectVoiceSpeed
+}) {
   const modalRef = useRef(null);
   const { language, setLanguage, supportedLanguages, t } = useLanguage();
+  const { user, isGuest } = useAuth();
 
   // Close on Escape key press
   useEffect(() => {
@@ -22,7 +31,7 @@ export default function SettingsModal({ isOpen, onClose, theme, onSelectTheme })
 
   if (!isOpen) return null;
 
-  const options = [
+  const themeOptions = [
     {
       id: 'light',
       label: t('settings.light'),
@@ -43,6 +52,13 @@ export default function SettingsModal({ isOpen, onClose, theme, onSelectTheme })
     },
   ];
 
+  const displayName = user?.user_metadata?.full_name || user?.user_metadata?.name || user?.email?.split('@')[0] || 'Debater';
+  const displayEmail = user?.email || 'No email provided';
+  const authProvider = user?.app_metadata?.provider
+    ? (user.app_metadata.provider === 'google' ? 'Google' : user.app_metadata.provider)
+    : 'Email';
+  const avatarUrl = user?.user_metadata?.avatar_url || user?.user_metadata?.picture;
+
   return (
     <div
       className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm animate-message-in"
@@ -55,7 +71,7 @@ export default function SettingsModal({ isOpen, onClose, theme, onSelectTheme })
     >
       <div
         ref={modalRef}
-        className="w-full max-w-md bg-chamber-surface border border-chamber-border rounded-lg shadow-2xl p-6 space-y-6 text-chamber-text max-h-[90vh] overflow-y-auto"
+        className="w-full max-w-md bg-chamber-surface border border-chamber-border rounded-lg shadow-2xl p-6 space-y-5 text-chamber-text max-h-[90vh] overflow-y-auto"
       >
         {/* Header */}
         <div className="flex items-center justify-between pb-3 border-b border-chamber-border">
@@ -75,8 +91,65 @@ export default function SettingsModal({ isOpen, onClose, theme, onSelectTheme })
           </button>
         </div>
 
+        {/* Profile Information Section */}
+        <div className="space-y-2">
+          <div className="flex items-center gap-1.5">
+            <User className="w-3.5 h-3.5 text-chamber-amber" />
+            <label className="text-xs uppercase font-semibold tracking-wider text-chamber-muted">
+              Profile Information
+            </label>
+          </div>
+
+          {isGuest || !user ? (
+            <div className="p-3 rounded-lg bg-chamber-surfaceAlt border border-chamber-border flex items-center justify-between">
+              <div className="flex items-center gap-3">
+                <div className="w-9 h-9 rounded-full bg-slate-800 border border-slate-700 flex items-center justify-center text-slate-300 font-semibold text-xs">
+                  GU
+                </div>
+                <div>
+                  <div className="text-sm font-semibold text-chamber-text">Guest User</div>
+                  <div className="text-xs text-chamber-muted">Guest Mode • Local browser storage</div>
+                </div>
+              </div>
+              <span className="text-[10px] font-mono uppercase px-2 py-0.5 rounded bg-slate-800 text-slate-400 border border-slate-700">
+                Guest
+              </span>
+            </div>
+          ) : (
+            <div className="p-3 rounded-lg bg-chamber-surfaceAlt border border-chamber-border space-y-2.5">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-3">
+                  {avatarUrl ? (
+                    <img
+                      src={avatarUrl}
+                      alt={displayName}
+                      className="w-10 h-10 rounded-full border border-chamber-amber/30 object-cover"
+                    />
+                  ) : (
+                    <div className="w-10 h-10 rounded-full bg-chamber-amber/20 border border-chamber-amber/40 flex items-center justify-center text-chamber-amber font-bold text-sm">
+                      {displayName.charAt(0).toUpperCase()}
+                    </div>
+                  )}
+                  <div>
+                    <div className="text-sm font-semibold text-chamber-text">{displayName}</div>
+                    <div className="text-xs text-chamber-muted">{displayEmail}</div>
+                  </div>
+                </div>
+                <div className="flex items-center gap-1 text-[11px] text-emerald-400 font-medium px-2 py-0.5 rounded bg-emerald-950/40 border border-emerald-800/60">
+                  <ShieldCheck className="w-3 h-3" />
+                  <span>Active</span>
+                </div>
+              </div>
+              <div className="pt-2 border-t border-chamber-border/60 flex items-center justify-between text-xs text-chamber-muted">
+                <span>Provider: <strong className="text-chamber-text font-medium">{authProvider}</strong></span>
+                <span>Status: <strong className="text-emerald-400 font-medium">Authenticated</strong></span>
+              </div>
+            </div>
+          )}
+        </div>
+
         {/* Theme Section */}
-        <div className="space-y-3">
+        <div className="space-y-3 pt-3 border-t border-chamber-border">
           <div>
             <label className="text-xs uppercase font-semibold tracking-wider text-chamber-muted block">
               {t('settings.appearance')}
@@ -87,7 +160,7 @@ export default function SettingsModal({ isOpen, onClose, theme, onSelectTheme })
           </div>
 
           <div className="space-y-2">
-            {options.map((opt) => {
+            {themeOptions.map((opt) => {
               const isSelected = theme === opt.id;
               const Icon = opt.icon;
 
@@ -96,7 +169,7 @@ export default function SettingsModal({ isOpen, onClose, theme, onSelectTheme })
                   key={opt.id}
                   type="button"
                   onClick={() => onSelectTheme(opt.id)}
-                  className={`w-full p-3 rounded-lg border text-left flex items-start justify-between gap-3 transition-all ${
+                  className={`w-full p-2.5 rounded-lg border text-left flex items-start justify-between gap-3 transition-all ${
                     isSelected
                       ? 'bg-chamber-amber/10 border-chamber-amber text-chamber-text ring-1 ring-chamber-amber shadow-sm'
                       : 'bg-chamber-surfaceAlt border-chamber-border text-chamber-muted hover:border-slate-500 hover:text-chamber-text'
@@ -105,7 +178,7 @@ export default function SettingsModal({ isOpen, onClose, theme, onSelectTheme })
                   aria-checked={isSelected}
                 >
                   <div className="flex items-start gap-3">
-                    <div className={`p-2 rounded-md mt-0.5 ${
+                    <div className={`p-1.5 rounded-md mt-0.5 ${
                       isSelected
                         ? 'bg-chamber-amber/20 text-chamber-amber'
                         : 'bg-chamber-surface border border-chamber-border text-chamber-muted'
@@ -167,12 +240,48 @@ export default function SettingsModal({ isOpen, onClose, theme, onSelectTheme })
           </div>
         </div>
 
+        {/* AI Voice Speed Section */}
+        <div className="space-y-3 pt-3 border-t border-chamber-border">
+          <div className="flex items-center justify-between">
+            <div>
+              <label className="text-xs uppercase font-semibold tracking-wider text-chamber-muted block flex items-center gap-1.5">
+                <Gauge className="w-3.5 h-3.5 text-chamber-amber" />
+                <span>AI Voice Speed</span>
+              </label>
+              <p className="text-xs text-chamber-muted mt-0.5">
+                Speech playback rate for AI opponent rebuttals.
+              </p>
+            </div>
+            <span className="font-mono text-xs font-bold px-2 py-0.5 rounded bg-chamber-amber/20 text-chamber-amber border border-chamber-amber/40">
+              {Number(voiceSpeed).toFixed(1)}x
+            </span>
+          </div>
+
+          <div className="space-y-2">
+            <input
+              type="range"
+              min="0.5"
+              max="2.0"
+              step="0.1"
+              value={voiceSpeed}
+              onChange={(e) => onSelectVoiceSpeed && onSelectVoiceSpeed(parseFloat(e.target.value))}
+              className="w-full accent-chamber-amber cursor-pointer"
+            />
+            <div className="flex justify-between text-[11px] text-chamber-muted font-mono">
+              <span>0.5x</span>
+              <span className={voiceSpeed === 1.0 ? 'text-chamber-amber font-bold' : ''}>1.0x (Default)</span>
+              <span>1.5x</span>
+              <span>2.0x</span>
+            </div>
+          </div>
+        </div>
+
         {/* Footer */}
-        <div className="pt-2 flex justify-end">
+        <div className="pt-2 flex justify-end border-t border-chamber-border">
           <button
             type="button"
             onClick={onClose}
-            className="px-4 py-2 rounded-md bg-chamber-surfaceAlt border border-chamber-border text-xs font-semibold hover:border-slate-500 transition-colors focus:outline-none focus:ring-2 focus:ring-chamber-amber"
+            className="px-4 py-2 rounded-md bg-chamber-amber hover:bg-amber-500 text-[#11141A] text-xs font-semibold transition-colors focus:outline-none focus:ring-2 focus:ring-chamber-amber"
           >
             {t('settings.done')}
           </button>

@@ -16,10 +16,10 @@ import { useLanguage } from './i18n';
 import { useAuth } from './context/AuthContext';
 
 export default function App() {
-  const speech = useSpeech();
+  const { language } = useLanguage();
+  const speech = useSpeech({ language });
   const theme = useTheme();
   const { currentPath, navigate } = useRouter();
-  const { language } = useLanguage();
   const { user, isAuthenticated, isGuest, authLoading, logout } = useAuth();
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
   const [redirectTarget, setRedirectTarget] = useState(null);
@@ -213,6 +213,8 @@ export default function App() {
         onClose={() => setIsSettingsOpen(false)}
         theme={theme.theme}
         onSelectTheme={theme.setTheme}
+        voiceSpeed={speech.voiceSpeed}
+        onSelectVoiceSpeed={speech.setVoiceSpeed}
       />
     </div>
   );

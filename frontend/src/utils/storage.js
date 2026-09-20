@@ -179,3 +179,36 @@ export function saveStoredTheme(theme) {
     console.error('Failed to save theme preference', e);
   }
 }
+
+const VOICE_SPEED_STORAGE_KEY = 'sparring_voice_speed';
+
+/**
+ * Reads the stored AI voice speed preference (0.5x to 2.0x, default 1.0).
+ */
+export function getStoredVoiceSpeed() {
+  try {
+    const stored = localStorage.getItem(VOICE_SPEED_STORAGE_KEY);
+    if (stored) {
+      const parsed = parseFloat(stored);
+      if (!isNaN(parsed) && parsed >= 0.5 && parsed <= 2.0) {
+        return parsed;
+      }
+    }
+  } catch {}
+  return 1.0;
+}
+
+/**
+ * Saves the AI voice speed preference to localStorage.
+ */
+export function saveStoredVoiceSpeed(speed) {
+  try {
+    const num = parseFloat(speed);
+    if (!isNaN(num) && num >= 0.5 && num <= 2.0) {
+      localStorage.setItem(VOICE_SPEED_STORAGE_KEY, String(num));
+    }
+  } catch (e) {
+    console.error('Failed to save voice speed preference', e);
+  }
+}
+

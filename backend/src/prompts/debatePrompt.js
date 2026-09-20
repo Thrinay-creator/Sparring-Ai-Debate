@@ -11,11 +11,12 @@ export function buildDebatePrompt({
   language = 'en'
 }) {
   // Language instructions
-  let languageInstruction = '9. LANGUAGE: Debate is conducted in English.';
-  if (language === 'te') {
-    languageInstruction = '9. LANGUAGE REQUIREMENT (CRITICAL): The debate is conducted in TELUGU (తెలుగు). You MUST formulate your counterargument ("counter") and score diagnostic ("scoreReason") fluently and naturally in Telugu script. Logical fallacy identifiers must remain the standard schema names.';
-  } else if (language === 'hi') {
-    languageInstruction = '9. LANGUAGE REQUIREMENT (CRITICAL): The debate is conducted in HINDI (हिन्दी). You MUST formulate your counterargument ("counter") and score diagnostic ("scoreReason") fluently and naturally in Hindi (Devanagari script). Logical fallacy identifiers must remain the standard schema names.';
+  const normLang = (language === 'te' || language === 'Telugu') ? 'te' : (language === 'hi' || language === 'Hindi') ? 'hi' : 'en';
+  let languageInstruction = '9. LANGUAGE REQUIREMENT: Respond entirely in English. Formulate your counterargument ("counter") and score diagnostic ("scoreReason") fluently in English.';
+  if (normLang === 'te') {
+    languageInstruction = '9. LANGUAGE REQUIREMENT (CRITICAL): Respond entirely in Telugu (తెలుగు). You MUST formulate your counterargument ("counter") and score diagnostic ("scoreReason") fluently and naturally in Telugu script. Logical fallacy identifiers must remain the standard schema names.';
+  } else if (normLang === 'hi') {
+    languageInstruction = '9. LANGUAGE REQUIREMENT (CRITICAL): Respond entirely in Hindi (हिन्दी). You MUST formulate your counterargument ("counter") and score diagnostic ("scoreReason") fluently and naturally in Hindi (Devanagari script). Logical fallacy identifiers must remain the standard schema names.';
   }
   // Difficulty instructions
   let difficultyInstruction = '';

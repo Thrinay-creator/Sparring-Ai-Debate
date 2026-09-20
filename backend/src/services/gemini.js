@@ -18,8 +18,9 @@ export function getGeminiClient() {
 }
 
 export function getModelName() {
-  return process.env.GEMINI_MODEL || 'gemini-3.8-flash';
+  return process.env.GEMINI_MODEL || 'gemini-3.5-flash';
 }
+
 
 /**
  * Executes a structured content generation with Gemini, validates against a Zod schema,
@@ -202,7 +203,7 @@ export async function generateStructuredContent({
         if (apiErr?.status === 429 || apiErr?.message?.includes('429') || apiErr?.message?.includes('RESOURCE_EXHAUSTED')) {
           const quotaErr = new Error('Gemini quota limit exceeded');
           quotaErr.code = 'GEMINI_QUOTA_ERROR';
-          quotaErr.userMessage = 'The AI debate chamber is currently at capacity. Please wait a moment and try again.';
+          quotaErr.userMessage = 'AI rate limit reached (Gemini 429). Please wait a moment before sending your next argument.';
           throw quotaErr;
         }
 
@@ -215,7 +216,7 @@ export async function generateStructuredContent({
           }
           const unavailableErr = new Error('Gemini model is currently experiencing high demand');
           unavailableErr.code = 'GEMINI_API_ERROR';
-          unavailableErr.userMessage = 'The AI opponent is experiencing heavy traffic. Please retry in a few seconds.';
+          unavailableErr.userMessage = 'The AI opponent service is temporarily unavailable (Gemini 503). Please retry in a few moments.';
           throw unavailableErr;
         }
 

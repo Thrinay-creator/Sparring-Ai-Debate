@@ -1,9 +1,13 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
+import { LANGUAGE_CONFIG } from '../i18n';
+import { getStoredVoiceSpeed, saveStoredVoiceSpeed } from '../utils/storage';
 
-export function useSpeech() {
+export function useSpeech({ language = 'en' } = {}) {
   const [voiceState, setVoiceState] = useState('IDLE'); // 'IDLE' | 'LISTENING' | 'PROCESSING' | 'AI_SPEAKING'
   const [isMuted, setIsMuted] = useState(false);
   const [errorMessage, setErrorMessage] = useState(null);
+  const [voiceSpeed, setVoiceSpeedState] = useState(() => getStoredVoiceSpeed());
+  const [voices, setVoices] = useState([]);
 
   const recognitionRef = useRef(null);
   const currentUtteranceRef = useRef(null);
@@ -14,32 +18,52 @@ export function useSpeech() {
   const synthesisSupported = typeof window !== 'undefined' && 
     !!window.speechSynthesis;
 
-  // Initialize SpeechRecognition once
+  const recognitionLang = LANGUAGE_CONFIG[language]?.recognition || 'en-IN';
+  const speechLang = LANGUAGE_CONFIG[language]?.speech || 'en-IN';
+
+  // Populate synthesis voices and listen to voiceschanged event
   useEffect(() => {
-    if (!recognitionSupported) return;
+    if (!synthesisSupported || !window.speechSynthesis) return;
 
-    const SpeechRecognitionClass = window.SpeechRecognition || window.webkitSpeechRecognition;
-    const recognition = new SpeechRecognitionClass();
+    const loadVoices = () => {
+      const available = window.speechSynthesis.getVoices();
+      if (available && available.length > 0) {
+        setVoices(available);
+      }
+    };
 
-    recognition.continuous = false;
-    recognition.interimResults = false;
-    recognition.lang = 'en-US';
+    loadVoices();
+    if (window.speechSynthesis.onvoiceschanged !== undefined) {
+      window.speechSynthesis.onvoiceschanged = loadVoices;
+    }
+  }, [synthesisSupported]);
 
-    recognitionRef.current = recognition;
-
+  // Clean up recognition and speech synthesis on unmount
+  useEffect(() => {
     return () => {
       if (recognitionRef.current) {
-        recognitionRef.current.abort();
+        try {
+          recognitionRef.current.abort();
+        } catch {}
       }
       if (synthesisSupported && window.speechSynthesis) {
         window.speechSynthesis.cancel();
       }
     };
-  }, [recognitionSupported, synthesisSupported]);
+  }, [synthesisSupported]);
+
+  // Set voice speed preference
+  const setVoiceSpeed = useCallback((speed) => {
+    const num = parseFloat(speed);
+    if (!isNaN(num) && num >= 0.5 && num <= 2.0) {
+      setVoiceSpeedState(num);
+      saveStoredVoiceSpeed(num);
+    }
+  }, []);
 
   // Start listening for user speech
   const startListening = useCallback((onTranscriptReceived) => {
-    if (!recognitionSupported || !recognitionRef.current) {
+    if (!recognitionSupported) {
       setErrorMessage("Voice input isn't supported in this browser. You can continue with text.");
       return;
     }
@@ -49,10 +73,26 @@ export function useSpeech() {
       return;
     }
 
-    setErrorMessage(null);
-    setVoiceState('LISTENING');
+    // Abort any existing active session cleanly
+    if (recognitionRef.current) {
+      try {
+        recognitionRef.current.abort();
+      } catch {}
+      recognitionRef.current = null;
+    }
 
-    const recognition = recognitionRef.current;
+    setErrorMessage(null);
+
+    const SpeechRecognitionClass = window.SpeechRecognition || window.webkitSpeechRecognition;
+    const recognition = new SpeechRecognitionClass();
+
+    recognition.continuous = false;
+    recognition.interimResults = false;
+    recognition.lang = recognitionLang;
+
+    recognition.onstart = () => {
+      setVoiceState('LISTENING');
+    };
 
     recognition.onresult = (event) => {
       setVoiceState('PROCESSING');
@@ -60,35 +100,42 @@ export function useSpeech() {
       if (text && onTranscriptReceived) {
         onTranscriptReceived(text);
       }
-      setVoiceState('IDLE');
     };
 
     recognition.onerror = (event) => {
       console.warn('[Speech Recognition Error]:', event.error);
       if (event.error === 'not-allowed') {
         setErrorMessage('Microphone access denied. Please check browser permissions.');
-      } else if (event.error !== 'no-speech') {
+      } else if (event.error === 'language-not-supported') {
+        setErrorMessage(`Speech recognition in ${language.toUpperCase()} (${recognitionLang}) is not supported on this browser.`);
+      } else if (event.error !== 'no-speech' && event.error !== 'aborted') {
         setErrorMessage(`Voice recognition note: ${event.error}`);
       }
       setVoiceState('IDLE');
     };
 
     recognition.onend = () => {
-      setVoiceState((prev) => (prev === 'LISTENING' ? 'IDLE' : prev));
+      setVoiceState('IDLE');
+      recognitionRef.current = null;
     };
+
+    recognitionRef.current = recognition;
 
     try {
       recognition.start();
     } catch (e) {
       console.warn('Recognition start exception:', e);
       setVoiceState('IDLE');
+      recognitionRef.current = null;
     }
-  }, [recognitionSupported, voiceState]);
+  }, [recognitionSupported, voiceState, recognitionLang, language]);
 
   // Stop listening manually
   const stopListening = useCallback(() => {
     if (recognitionRef.current) {
-      recognitionRef.current.stop();
+      try {
+        recognitionRef.current.stop();
+      } catch {}
     }
     setVoiceState('IDLE');
   }, []);
@@ -101,7 +148,9 @@ export function useSpeech() {
 
     // Abort active recognition to prevent feedback loop
     if (recognitionRef.current) {
-      recognitionRef.current.abort();
+      try {
+        recognitionRef.current.abort();
+      } catch {}
     }
 
     window.speechSynthesis.cancel();
@@ -114,15 +163,32 @@ export function useSpeech() {
 
     const utterance = new SpeechSynthesisUtterance(cleanText);
     currentUtteranceRef.current = utterance;
-    utterance.rate = 1.0;
+    utterance.rate = voiceSpeed;
     utterance.pitch = 1.0;
-    utterance.lang = 'en-US';
+    utterance.lang = speechLang;
 
-    // Pick an articulate English voice if available
-    const voices = window.speechSynthesis.getVoices();
-    const naturalVoice = voices.find(v => v.lang.startsWith('en') && (v.name.includes('Natural') || v.name.includes('Google') || v.name.includes('Daniel')));
-    if (naturalVoice) {
-      utterance.voice = naturalVoice;
+    // Voice Selection Hierarchy:
+    // 1. Exact locale match (e.g. te-IN, hi-IN, en-IN)
+    // 2. Language prefix match (e.g. te, hi, en)
+    // 3. Fallback to default
+    const availableVoices = voices.length > 0 ? voices : window.speechSynthesis.getVoices();
+    const langNormalized = speechLang.toLowerCase().replace('_', '-');
+    const langPrefix = langNormalized.split('-')[0];
+
+    let matchedVoice = availableVoices.find(v => {
+      const vLang = v.lang.toLowerCase().replace('_', '-');
+      return vLang === langNormalized;
+    });
+
+    if (!matchedVoice) {
+      matchedVoice = availableVoices.find(v => {
+        const vLang = v.lang.toLowerCase().replace('_', '-');
+        return vLang.startsWith(langPrefix);
+      });
+    }
+
+    if (matchedVoice) {
+      utterance.voice = matchedVoice;
     }
 
     utterance.onstart = () => {
@@ -140,7 +206,7 @@ export function useSpeech() {
     };
 
     window.speechSynthesis.speak(utterance);
-  }, [synthesisSupported, isMuted]);
+  }, [synthesisSupported, isMuted, voiceSpeed, speechLang, voices]);
 
   // Stop speaking immediately
   const stopSpeaking = useCallback(() => {
@@ -168,6 +234,8 @@ export function useSpeech() {
     errorMessage,
     recognitionSupported,
     synthesisSupported,
+    voiceSpeed,
+    setVoiceSpeed,
     startListening,
     stopListening,
     speakAIResponse,

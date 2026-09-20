@@ -6,6 +6,24 @@ import hi from './hi';
 const translations = { en, te, hi };
 const LANGUAGE_STORAGE_KEY = 'sparring_language';
 
+export const LANGUAGE_CONFIG = {
+  en: {
+    recognition: 'en-IN',
+    speech: 'en-IN',
+    aiLanguage: 'English'
+  },
+  te: {
+    recognition: 'te-IN',
+    speech: 'te-IN',
+    aiLanguage: 'Telugu'
+  },
+  hi: {
+    recognition: 'hi-IN',
+    speech: 'hi-IN',
+    aiLanguage: 'Hindi'
+  }
+};
+
 export const SUPPORTED_LANGUAGES = [
   { code: 'en', label: 'English', nativeName: 'English' },
   { code: 'te', label: 'Telugu', nativeName: 'తెలుగు' },
@@ -67,7 +85,14 @@ export function LanguageProvider({ children }) {
   }, [language]);
 
   return (
-    <LanguageContext.Provider value={{ language, setLanguage, t, supportedLanguages: SUPPORTED_LANGUAGES }}>
+    <LanguageContext.Provider value={{
+      language,
+      setLanguage,
+      t,
+      supportedLanguages: SUPPORTED_LANGUAGES,
+      currentLanguageConfig: LANGUAGE_CONFIG[language] || LANGUAGE_CONFIG.en,
+      languageConfig: LANGUAGE_CONFIG
+    }}>
       {children}
     </LanguageContext.Provider>
   );

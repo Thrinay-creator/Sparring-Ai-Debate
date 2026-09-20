@@ -22,7 +22,7 @@ export function errorHandler(err, req, res, next) {
   if (err?.code === 'GEMINI_QUOTA_ERROR') {
     return res.status(429).json({
       code: 'GEMINI_QUOTA_ERROR',
-      message: 'The AI debate chamber is currently at capacity. Please wait a moment and try again.'
+      message: err.userMessage || 'AI rate limit reached (Gemini 429). Please wait a moment before sending your next argument.'
     });
   }
 

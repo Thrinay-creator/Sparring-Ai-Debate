@@ -1,11 +1,12 @@
 import { ALLOWED_FALLACIES } from '../schemas/debateSchema.js';
 
 export function buildFeedbackPrompt({ topic, userStance, transcript, language = 'en' }) {
-  let languageRule = '6. LANGUAGE: Deliver analysis in English.';
-  if (language === 'te') {
-    languageRule = '6. LANGUAGE REQUIREMENT (CRITICAL): The debate analysis MUST be delivered in TELUGU (తెలుగు). Write all strengths, weaknesses, fallacy notes, and suggestions in fluent Telugu script. Keep numerical scores and fallacy identifier keys standard.';
-  } else if (language === 'hi') {
-    languageRule = '6. LANGUAGE REQUIREMENT (CRITICAL): The debate analysis MUST be delivered in HINDI (हिन्दी). Write all strengths, weaknesses, fallacy notes, and suggestions in fluent Hindi (Devanagari script). Keep numerical scores and fallacy identifier keys standard.';
+  const normLang = (language === 'te' || language === 'Telugu') ? 'te' : (language === 'hi' || language === 'Hindi') ? 'hi' : 'en';
+  let languageRule = '6. LANGUAGE REQUIREMENT: Deliver analysis entirely in English.';
+  if (normLang === 'te') {
+    languageRule = '6. LANGUAGE REQUIREMENT (CRITICAL): The debate analysis MUST be delivered entirely in TELUGU (తెలుగు). Write all strengths, weaknesses, fallacy notes, and suggestions in fluent Telugu script. Keep numerical scores and fallacy identifier keys standard.';
+  } else if (normLang === 'hi') {
+    languageRule = '6. LANGUAGE REQUIREMENT (CRITICAL): The debate analysis MUST be delivered entirely in HINDI (हिन्दी). Write all strengths, weaknesses, fallacy notes, and suggestions in fluent Hindi (Devanagari script). Keep numerical scores and fallacy identifier keys standard.';
   }
 
   const serializedTranscript = transcript

@@ -35,7 +35,7 @@ export const debateTurnRequestSchema = z.object({
   latestArgument: z.string().trim()
     .min(10, 'Argument must be at least 10 characters')
     .max(1500, 'Argument cannot exceed 1500 characters'),
-  language: z.enum(['en', 'te', 'hi']).optional().default('en')
+  language: z.enum(['en', 'te', 'hi', 'English', 'Telugu', 'Hindi']).optional().default('en')
 }).refine(
   (data) => data.userStance !== data.aiStance,
   {
