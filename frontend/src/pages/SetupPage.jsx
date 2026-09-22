@@ -7,10 +7,10 @@ import { Swords, History, ChevronRight, AlertCircle, Sparkles, Settings, User, L
 import { useAuth } from '../context/AuthContext';
 import { useLanguage } from '../i18n';
 
-export default function SetupPage({ onStartDebate, pastSessions = [], onSelectSession, onOpenSettings, onOpenAuth, onNavigate }) {
+export default function SetupPage({ onStartDebate, pastSessions = [], onSelectSession, onOpenSettings, onOpenAuth, onNavigate, initialTopic = '' }) {
   const { user, isAuthenticated, logout } = useAuth();
   const { t } = useLanguage();
-  const [topic, setTopic] = useState('');
+  const [topic, setTopic] = useState(initialTopic || '');
   const [userStance, setUserStance] = useState('FOR');
   const [difficulty, setDifficulty] = useState('SHARP');
   const [error, setError] = useState(null);

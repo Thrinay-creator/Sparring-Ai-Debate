@@ -7,6 +7,7 @@ import SignupPage from './pages/SignupPage';
 import ForgotPasswordPage from './pages/ForgotPasswordPage';
 import ResetPasswordPage from './pages/ResetPasswordPage';
 import HistoryPage from './pages/HistoryPage';
+import LandingPage from './pages/LandingPage';
 import SettingsModal from './components/common/SettingsModal';
 import { useDebate } from './hooks/useDebate';
 import { useSpeech } from './hooks/useSpeech';
@@ -20,9 +21,10 @@ export default function App() {
   const speech = useSpeech({ language });
   const theme = useTheme();
   const { currentPath, navigate } = useRouter();
-  const { user, isAuthenticated, isGuest, authLoading, logout } = useAuth();
+  const { user, isAuthenticated, isGuest, authLoading, logout, continueAsGuest } = useAuth();
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
   const [redirectTarget, setRedirectTarget] = useState(null);
+  const [initialTopic, setInitialTopic] = useState('');
   const [isSessionUnlocked, setIsSessionUnlocked] = useState(() => {
     try {
       return typeof window !== 'undefined' && sessionStorage.getItem('sparring_session_unlocked') === 'true';
@@ -56,27 +58,14 @@ export default function App() {
 
   // Guard routes: Protect routes based on initialized authentication status
   useEffect(() => {
-    // 1. Never redirect while auth is initializing
     if (authLoading) return;
 
-    // 2. New visit without explicit login/guest choice, or unauthenticated user
-    if (!isSessionUnlocked || (!isAuthenticated && !isGuest)) {
-      if (currentPath === '/history') {
-        setRedirectTarget('/history');
-        navigate('/login');
-      } else if (!AUTH_ROUTES.includes(currentPath)) {
-        navigate('/login');
-      }
-      return;
-    }
-
-    // 3. Guest user accessing protected /history route
-    if (isGuest && currentPath === '/history') {
+    // Protected route: /history requires authenticated account
+    if (currentPath === '/history' && !isAuthenticated) {
       setRedirectTarget('/history');
       navigate('/login');
-      return;
     }
-  }, [authLoading, isAuthenticated, isGuest, isSessionUnlocked, currentPath, navigate]);
+  }, [authLoading, isAuthenticated, currentPath, navigate]);
 
   // Cleanly reset active debate state if user logs out
   useEffect(() => {
@@ -121,6 +110,27 @@ export default function App() {
     navigate(destination);
   };
 
+  const handleLaunchDebate = (topicToUse = '') => {
+    try {
+      sessionStorage.setItem('sparring_session_unlocked', 'true');
+    } catch {}
+    setIsSessionUnlocked(true);
+    if (!isAuthenticated && !isGuest) {
+      continueAsGuest();
+    }
+    if (topicToUse) {
+      setInitialTopic(topicToUse);
+    }
+    navigate('/debate');
+  };
+
+  const handleToggleTheme = () => {
+    theme.setTheme(theme.resolvedTheme === 'dark' ? 'light' : 'dark');
+  };
+
+  const isDebatingActive = (stage === 'DEBATING' || stage === 'WAITING_FOR_AI' || stage === 'FINISHING');
+  const isSummaryActive = stage === 'SUMMARY';
+
   return (
     <div className="min-h-screen bg-chamber-bg text-chamber-text font-sans antialiased transition-colors duration-200">
       {/* Route: /login */}
@@ -161,27 +171,8 @@ export default function App() {
         />
       )}
 
-      {/* Fallback to LoginPage for unauthenticated or locked access at root / */}
-      {currentPath === '/' && (!isSessionUnlocked || (!isAuthenticated && !isGuest)) && (
-        <LoginPage
-          onNavigate={navigate}
-          onSuccess={handleAuthSuccess}
-        />
-      )}
-
-      {/* Main Debate Stages (Route: /) - Accessible when session unlocked & (Authenticated or Guest) */}
-      {currentPath === '/' && isSessionUnlocked && (isAuthenticated || isGuest) && stage === 'SETUP' && (
-        <SetupPage
-          onStartDebate={startDebate}
-          pastSessions={pastSessions}
-          onSelectSession={loadPastSession}
-          onOpenSettings={() => setIsSettingsOpen(true)}
-          onOpenAuth={() => navigate('/login')}
-          onNavigate={navigate}
-        />
-      )}
-
-      {currentPath === '/' && isSessionUnlocked && (isAuthenticated || isGuest) && (stage === 'DEBATING' || stage === 'WAITING_FOR_AI' || stage === 'FINISHING') && (
+      {/* Active Debate Session View */}
+      {isDebatingActive && (
         <DebatePage
           session={session}
           stage={stage}
@@ -191,19 +182,53 @@ export default function App() {
           onRetryTurn={retryLastTurn}
           onFinishDebate={finishDebate}
           onOpenSettings={() => setIsSettingsOpen(true)}
-          onNavigateHome={resetToSetup}
+          onNavigateHome={() => {
+            resetToSetup();
+            navigate('/');
+          }}
           onOpenAuth={() => navigate('/login')}
           speech={speech}
         />
       )}
 
-      {currentPath === '/' && isSessionUnlocked && (isAuthenticated || isGuest) && stage === 'SUMMARY' && (
+      {/* Debate Summary View */}
+      {isSummaryActive && (
         <SummaryPage
           session={session}
-          onStartNewDebate={resetToSetup}
+          onStartNewDebate={() => {
+            resetToSetup();
+            navigate('/debate');
+          }}
           onOpenSettings={() => setIsSettingsOpen(true)}
           onNavigate={navigate}
           saveError={saveError}
+        />
+      )}
+
+      {/* Route: /debate (Setup Arena) */}
+      {currentPath === '/debate' && !isDebatingActive && !isSummaryActive && (
+        <SetupPage
+          onStartDebate={startDebate}
+          pastSessions={pastSessions}
+          onSelectSession={loadPastSession}
+          onOpenSettings={() => setIsSettingsOpen(true)}
+          onOpenAuth={() => navigate('/login')}
+          onNavigate={navigate}
+          initialTopic={initialTopic}
+        />
+      )}
+
+      {/* Route: / (Default MotionSites-Inspired Landing Page) */}
+      {currentPath === '/' && !isDebatingActive && !isSummaryActive && (
+        <LandingPage
+          onStartDebating={() => handleLaunchDebate()}
+          onStartDebateWithTopic={(topic) => handleLaunchDebate(topic)}
+          onNavigate={navigate}
+          theme={theme.resolvedTheme}
+          onToggleTheme={handleToggleTheme}
+          user={user}
+          isAuthenticated={isAuthenticated}
+          speech={speech}
         />
       )}
 

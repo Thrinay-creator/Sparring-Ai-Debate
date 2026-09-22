@@ -7,6 +7,21 @@ export default {
   theme: {
     extend: {
       colors: {
+        arena: {
+          bg: '#050507',
+          card: '#0D0D12',
+          cardElevated: '#12121A',
+          border: 'rgba(255, 255, 255, 0.08)',
+          borderHover: 'rgba(255, 255, 255, 0.18)',
+          violet: '#7C3AED',
+          violetLight: '#8B5CF6',
+          indigo: '#6366F1',
+          cyan: '#22D3EE',
+          blue: '#38BDF8',
+          textPrimary: '#F5F5F7',
+          textSecondary: '#A1A1AA',
+          textMuted: '#71717A',
+        },
         chamber: {
           bg: 'var(--chamber-bg, #11141A)',
           surface: 'var(--chamber-surface, #1C2129)',
@@ -27,15 +42,26 @@ export default {
       fontFamily: {
         serif: ['"DM Serif Display"', 'Georgia', 'serif'],
         sans: ['"Inter"', 'system-ui', '-apple-system', 'sans-serif'],
+        mono: ['"JetBrains Mono"', 'ui-monospace', 'SFMono-Regular', 'Menlo', 'monospace'],
       },
       keyframes: {
         messageSlide: {
           '0%': { opacity: '0', transform: 'translateY(8px)' },
           '100%': { opacity: '1', transform: 'translateY(0)' },
+        },
+        pulseGlow: {
+          '0%, 100%': { opacity: '0.3', transform: 'scale(1)' },
+          '50%': { opacity: '0.6', transform: 'scale(1.08)' }
+        },
+        shimmerText: {
+          '0%': { backgroundPosition: '0% 50%' },
+          '100%': { backgroundPosition: '200% 50%' }
         }
       },
       animation: {
         'message-in': 'messageSlide 0.25s ease-out forwards',
+        'pulse-glow': 'pulseGlow 6s ease-in-out infinite',
+        'shimmer-fast': 'shimmerText 3s linear infinite',
       }
     },
   },
@@ -75,15 +101,11 @@ export default {
           "base-300": "#E2E8F0",
           "base-content": "#0F172A",
           "info": "#0284C7",
-          "success": "#10B981",
+          "success": "#059669",
           "warning": "#D97706",
-          "error": "#EF4444",
+          "error": "#DC2626",
         }
-      },
-    ],
-    darkTheme: "chamber",
-    base: true,
-    styled: true,
-    utils: true,
-  },
+      }
+    ]
+  }
 };
