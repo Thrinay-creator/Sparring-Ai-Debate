@@ -3,37 +3,38 @@
 @tailwind utilities;
 
 :root, [data-theme="chamber"] {
-  --chamber-bg: #11141A;
-  --chamber-surface: #1C2129;
-  --chamber-surface-alt: #161B22;
-  --chamber-border: #28303B;
-  --chamber-muted: #94A3B8;
-  --chamber-text: #F3F4F6;
-  --chamber-amber: #F59E0B;
-  --chamber-amber-dark: #B45309;
-  --chamber-user: #38BDF8;
-  --chamber-user-bg: #13283B;
-  --chamber-user-border: #1E4768;
-  --chamber-ai: #FB923C;
-  --chamber-ai-bg: #351B12;
-  --chamber-ai-border: #642E1B;
+  --chamber-bg: #050507;
+  --chamber-surface: #0D0D12;
+  --chamber-surface-alt: #12121A;
+  --chamber-border: rgba(255, 255, 255, 0.08);
+  --chamber-muted: #A1A1AA;
+  --chamber-text: #F5F5F7;
+  --chamber-amber: #7C3AED;
+  --chamber-amber-dark: #6D28D9;
+  --chamber-user: #22D3EE;
+  --chamber-user-bg: #0C1E2E;
+  --chamber-user-border: #154360;
+  --chamber-ai: #A78BFA;
+  --chamber-ai-bg: #1E1238;
+  --chamber-ai-border: #4C268F;
 }
 
+/* First-class, Editorial Light Theme Tokens */
 [data-theme="chamber-light"] {
-  --chamber-bg: #F8FAFC;
+  --chamber-bg: #F7F7F5;
   --chamber-surface: #FFFFFF;
-  --chamber-surface-alt: #F1F5F9;
-  --chamber-border: #CBD5E1;
-  --chamber-muted: #64748B;
-  --chamber-text: #0F172A;
-  --chamber-amber: #D97706;
-  --chamber-amber-dark: #92400E;
-  --chamber-user: #0284C7;
-  --chamber-user-bg: #E0F2FE;
-  --chamber-user-border: #7DD3FC;
-  --chamber-ai: #EA580C;
-  --chamber-ai-bg: #FFEDD5;
-  --chamber-ai-border: #FDBA74;
+  --chamber-surface-alt: #F2F2EF;
+  --chamber-border: #E4E6EA;
+  --chamber-muted: #5F6673;
+  --chamber-text: #111318;
+  --chamber-amber: #6D4AFF;
+  --chamber-amber-dark: #5835E5;
+  --chamber-user: #18B8D4;
+  --chamber-user-bg: #EAF9FB;
+  --chamber-user-border: #B2EBF2;
+  --chamber-ai: #6D4AFF;
+  --chamber-ai-bg: #F5F2FF;
+  --chamber-ai-border: #D8CEFD;
 }
 
 @layer base {
@@ -46,54 +47,6 @@
   h1, h2, h3, .font-serif {
     font-family: 'DM Serif Display', Georgia, serif;
   }
-}
-
-/* Light theme overrides for containers and borders */
-[data-theme="chamber-light"] body {
-  background-color: #F8FAFC !important;
-  color: #0F172A !important;
-}
-
-[data-theme="chamber-light"] .bg-\[\#11141A\] {
-  background-color: #F8FAFC !important;
-}
-
-[data-theme="chamber-light"] .bg-\[\#161B22\] {
-  background-color: #F1F5F9 !important;
-}
-
-[data-theme="chamber-light"] .bg-\[\#161B22\]\/90 {
-  background-color: rgba(241, 245, 249, 0.9) !important;
-}
-
-[data-theme="chamber-light"] .bg-\[\#161B22\]\/95 {
-  background-color: rgba(241, 245, 249, 0.95) !important;
-}
-
-[data-theme="chamber-light"] .bg-\[\#161B22\]\/60 {
-  background-color: rgba(241, 245, 249, 0.8) !important;
-}
-
-[data-theme="chamber-light"] .bg-\[\#14181F\] {
-  background-color: #F1F5F9 !important;
-}
-
-[data-theme="chamber-light"] .bg-\[\#1C2129\] {
-  background-color: #FFFFFF !important;
-}
-
-[data-theme="chamber-light"] .text-slate-100,
-[data-theme="chamber-light"] .text-slate-200 {
-  color: #0F172A !important;
-}
-
-[data-theme="chamber-light"] .text-slate-300 {
-  color: #334155 !important;
-}
-
-[data-theme="chamber-light"] input,
-[data-theme="chamber-light"] textarea {
-  color: #0F172A !important;
 }
 
 /* Custom scrollbars */
@@ -115,13 +68,15 @@
   background: var(--chamber-muted);
 }
 
-/* Restrained focus ring */
+/* Focus ring */
 button:focus-visible, input:focus-visible, textarea:focus-visible {
-  outline: 2px solid #7C3AED;
+  outline: 2px solid #6D4AFF;
   outline-offset: 1px;
 }
 
-/* MotionSites Subtle Grid Background */
+/* ==========================================================
+   MotionSites Grid Background
+   ========================================================== */
 .arena-grid-bg {
   background-size: 48px 48px;
   background-image: 
@@ -129,13 +84,30 @@ button:focus-visible, input:focus-visible, textarea:focus-visible {
     linear-gradient(to bottom, rgba(255, 255, 255, 0.03) 1px, transparent 1px);
 }
 
+/* Remove heavy global grid completely in Light Mode (No wireframe/graph paper) */
 [data-theme="chamber-light"] .arena-grid-bg {
-  background-image: 
-    linear-gradient(to right, rgba(0, 0, 0, 0.04) 1px, transparent 1px),
-    linear-gradient(to bottom, rgba(0, 0, 0, 0.04) 1px, transparent 1px);
+  background-image: none !important;
+  background-color: #F7F7F5 !important;
 }
 
-/* Premium Motion Glass Surfaces */
+/* ==========================================================
+   High-Contrast Headline Gradient
+   ========================================================== */
+.hero-headline-gradient {
+  background: linear-gradient(to right, #F5F5F7 0%, #A78BFA 50%, #6366F1 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+}
+
+[data-theme="chamber-light"] .hero-headline-gradient {
+  background: linear-gradient(to right, #111318 0%, #6D4AFF 55%, #8B6CFF 100%) !important;
+  -webkit-background-clip: text !important;
+  -webkit-text-fill-color: transparent !important;
+}
+
+/* ==========================================================
+   Glass Surfaces & Card Styles
+   ========================================================== */
 .arena-glass {
   background: rgba(255, 255, 255, 0.035);
   backdrop-filter: blur(14px);
@@ -150,38 +122,6 @@ button:focus-visible, input:focus-visible, textarea:focus-visible {
   border: 1px solid rgba(255, 255, 255, 0.12);
 }
 
-/* Light Theme Card & Glass Overrides */
-[data-theme="chamber-light"] .arena-glass {
-  background: rgba(255, 255, 255, 0.85);
-  border-color: rgba(0, 0, 0, 0.08);
-}
-
-[data-theme="chamber-light"] .arena-glass-elevated {
-  background: #FFFFFF;
-  border-color: rgba(0, 0, 0, 0.12);
-  box-shadow: 0 4px 20px -2px rgba(0, 0, 0, 0.05);
-}
-
-[data-theme="chamber-light"] .bg-\[\#050507\] {
-  background-color: #F8FAFC !important;
-}
-
-[data-theme="chamber-light"] .bg-\[\#08080B\] {
-  background-color: #F1F5F9 !important;
-}
-
-[data-theme="chamber-light"] .bg-\[\#0D0D12\] {
-  background-color: #FFFFFF !important;
-}
-
-[data-theme="chamber-light"] .text-\[\#F5F5F7\] {
-  color: #0F172A !important;
-}
-
-[data-theme="chamber-light"] .text-\[\#A1A1AA\] {
-  color: #64748B !important;
-}
-
 /* Subtle Card Glow on Hover */
 .arena-card-glow {
   transition: transform 0.3s cubic-bezier(0.16, 1, 0.3, 1), border-color 0.3s ease, box-shadow 0.3s ease;
@@ -191,6 +131,130 @@ button:focus-visible, input:focus-visible, textarea:focus-visible {
   transform: translateY(-3px);
   border-color: rgba(124, 58, 237, 0.35);
   box-shadow: 0 12px 30px -10px rgba(124, 58, 237, 0.15);
+}
+
+/* ==========================================================
+   Comprehensive Light Theme Design System Overrides
+   ========================================================== */
+[data-theme="chamber-light"] body {
+  background-color: #F7F7F5 !important;
+  color: #111318 !important;
+}
+
+/* 4-Tier Surface Hierarchy */
+/* 1. Base Canvas */
+[data-theme="chamber-light"] .bg-\[\#050507\] {
+  background-color: #F7F7F5 !important;
+}
+
+/* 2. Secondary & Alternating Section Bands */
+[data-theme="chamber-light"] .bg-\[\#08080B\],
+[data-theme="chamber-light"] .bg-\[\#161B22\],
+[data-theme="chamber-light"] .bg-\[\#14181F\],
+[data-theme="chamber-light"] .bg-white\/\[0\.01\],
+[data-theme="chamber-light"] .bg-white\/\[0\.015\],
+[data-theme="chamber-light"] .bg-white\/\[0\.02\],
+[data-theme="chamber-light"] .bg-white\/\[0\.025\],
+[data-theme="chamber-light"] .bg-white\/\[0\.03\],
+[data-theme="chamber-light"] .bg-white\/\[0\.04\],
+[data-theme="chamber-light"] .bg-white\/\[0\.05\],
+[data-theme="chamber-light"] .bg-black\/40,
+[data-theme="chamber-light"] .bg-black\/50 {
+  background-color: #F2F2EF !important;
+}
+
+/* 3. Surface / Card Containers */
+[data-theme="chamber-light"] .bg-\[\#09090D\],
+[data-theme="chamber-light"] .bg-\[\#0D0D12\],
+[data-theme="chamber-light"] .bg-\[\#0E0E15\],
+[data-theme="chamber-light"] .bg-\[\#1C2129\],
+[data-theme="chamber-light"] .bg-\[\#11141A\] {
+  background-color: #FFFFFF !important;
+}
+
+[data-theme="chamber-light"] .arena-glass {
+  background-color: #FFFFFF !important;
+  border-color: #E4E6EA !important;
+  box-shadow: 0 1px 4px 0 rgba(17, 19, 24, 0.04), 0 2px 8px -2px rgba(17, 19, 24, 0.02) !important;
+}
+
+[data-theme="chamber-light"] .arena-glass-elevated {
+  background-color: #FFFFFF !important;
+  border-color: #E4E6EA !important;
+  box-shadow: 0 8px 24px -4px rgba(17, 19, 24, 0.06), 0 2px 6px -1px rgba(17, 19, 24, 0.04) !important;
+}
+
+[data-theme="chamber-light"] .arena-card-glow:hover {
+  border-color: #6D4AFF !important;
+  box-shadow: 0 12px 30px -6px rgba(109, 74, 255, 0.12) !important;
+}
+
+/* Borders in Light Mode */
+[data-theme="chamber-light"] .border-white\/\[0\.06\],
+[data-theme="chamber-light"] .border-white\/\[0\.07\],
+[data-theme="chamber-light"] .border-white\/\[0\.08\],
+[data-theme="chamber-light"] .border-white\/\[0\.1\],
+[data-theme="chamber-light"] .border-white\/\[0\.12\],
+[data-theme="chamber-light"] .border-white\/\[0\.14\],
+[data-theme="chamber-light"] .border-white\/\[0\.15\],
+[data-theme="chamber-light"] .border-white\/\[0\.18\],
+[data-theme="chamber-light"] .border-white\/\[0\.2\] {
+  border-color: #E4E6EA !important;
+}
+
+/* Primary Text */
+[data-theme="chamber-light"] .text-\[\#F5F5F7\],
+[data-theme="chamber-light"] .text-\[\#D4D4D8\],
+[data-theme="chamber-light"] .text-slate-100,
+[data-theme="chamber-light"] .text-slate-200 {
+  color: #111318 !important;
+}
+
+/* Secondary Text */
+[data-theme="chamber-light"] .text-\[\#A1A1AA\],
+[data-theme="chamber-light"] .text-slate-300,
+[data-theme="chamber-light"] .text-zinc-400 {
+  color: #5F6673 !important;
+}
+
+/* Muted / Monospace Labels */
+[data-theme="chamber-light"] .text-\[\#71717A\],
+[data-theme="chamber-light"] .text-\[\#52525B\],
+[data-theme="chamber-light"] .text-zinc-500 {
+  color: #858C98 !important;
+}
+
+/* Inputs & Textareas */
+[data-theme="chamber-light"] input,
+[data-theme="chamber-light"] textarea {
+  background-color: #FFFFFF !important;
+  border-color: #E4E6EA !important;
+  color: #111318 !important;
+}
+
+[data-theme="chamber-light"] input::placeholder,
+[data-theme="chamber-light"] textarea::placeholder {
+  color: #858C98 !important;
+}
+
+/* Navbar scroll blur in light mode */
+[data-theme="chamber-light"] header.bg-\[\#050507\]\/80 {
+  background-color: rgba(247, 247, 245, 0.88) !important;
+  border-bottom-color: #E4E6EA !important;
+  box-shadow: 0 4px 16px -2px rgba(17, 19, 24, 0.05) !important;
+}
+
+/* Hero Debate Card in Light Mode */
+[data-theme="chamber-light"] .hero-debate-card {
+  background-color: #FFFFFF !important;
+  border-color: #E4E6EA !important;
+  box-shadow: 0 16px 40px -10px rgba(17, 19, 24, 0.08) !important;
+}
+
+[data-theme="chamber-light"] .hero-debate-ai-bubble {
+  background-color: #F8F6FF !important;
+  border-color: rgba(109, 74, 255, 0.25) !important;
+  box-shadow: 0 2px 10px -2px rgba(109, 74, 255, 0.06) !important;
 }
 
 /* Accessible Reduced Motion Support */

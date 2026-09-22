@@ -55,7 +55,7 @@ export default function HeroDebateVisual() {
       <div className="absolute -inset-1.5 bg-gradient-to-r from-[#7C3AED]/20 to-[#22D3EE]/15 rounded-3xl blur-xl opacity-75 -z-10 transition-opacity duration-500 group-hover:opacity-100" />
 
       {/* Main Card */}
-      <div className="w-full bg-[#09090D] border border-white/[0.08] rounded-2xl overflow-hidden backdrop-blur-xl">
+      <div className="w-full bg-[#09090D] border border-white/[0.08] rounded-2xl overflow-hidden backdrop-blur-xl hero-debate-card">
         {/* Top Control Bar */}
         <div className="flex items-center justify-between px-4 sm:px-5 py-3 border-b border-white/[0.07] bg-white/[0.02]">
           <div className="flex items-center gap-2">
@@ -141,7 +141,7 @@ export default function HeroDebateVisual() {
           </div>
 
           {/* AI Rebuttal */}
-          <div className="p-4 rounded-xl bg-gradient-to-br from-[#7C3AED]/[0.08] to-transparent border border-[#7C3AED]/30 shadow-lg shadow-purple-950/30 transition-all duration-300">
+          <div className="p-4 rounded-xl bg-gradient-to-br from-[#7C3AED]/[0.08] to-transparent border border-[#7C3AED]/30 shadow-lg shadow-purple-950/30 transition-all duration-300 hero-debate-ai-bubble">
             <div className="flex items-center justify-between mb-2">
               <div className="flex items-center gap-2">
                 <div className="w-6 h-6 rounded-md bg-[#7C3AED]/20 border border-[#7C3AED]/40 flex items-center justify-center text-[#A78BFA]">

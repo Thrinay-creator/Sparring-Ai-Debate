@@ -33,7 +33,7 @@ export default function Hero({ onStartDebating, onExploreHowItWorks }) {
         <h1 className="text-4xl sm:text-6xl lg:text-7xl font-bold tracking-tight text-[#F5F5F7] max-w-4xl mx-auto leading-[1.08] sm:leading-[1.05] uppercase">
           THINK SHARPER.
           <br />
-          <span className="bg-gradient-to-r from-[#F5F5F7] via-[#A78BFA] to-[#6366F1] bg-clip-text text-transparent">
+          <span className="hero-headline-gradient block">
             DEBATE SMARTER.
           </span>
         </h1>
