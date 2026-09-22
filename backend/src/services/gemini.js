@@ -129,44 +129,59 @@ export async function callGroqProvider({ systemPrompt, userPrompt, zodSchema, te
 }
 
 /**
- * Fallback Provider 2: Mistral AI (mistral-small-latest)
+ * Fallback Provider 2: Mistral AI (mistral-small-latest with open-mistral-7b fallback)
  */
 export async function callMistralProvider({ systemPrompt, userPrompt, zodSchema, temperature = 0.7 }) {
   const apiKey = process.env.MISTRAL_API_KEY;
   if (!apiKey) return null;
 
-  const model = process.env.MISTRAL_MODEL || 'mistral-small-latest';
-  console.log(`[Mistral Provider] Initiating generation with model: ${model}`);
-
-  const res = await fetch('https://api.mistral.ai/v1/chat/completions', {
-    method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-      'Authorization': `Bearer ${apiKey}`
-    },
-    body: JSON.stringify({
-      model,
-      messages: [
-        { role: 'system', content: `${systemPrompt}\n\nIMPORTANT: You must return strictly valid JSON conforming exactly to the requested schema. Do not include markdown preamble.` },
-        { role: 'user', content: userPrompt }
-      ],
-      response_format: { type: 'json_object' },
-      temperature
-    })
-  });
-
-  if (!res.ok) {
-    const errorBody = await res.text().catch(() => '');
-    throw new Error(`Mistral API returned HTTP ${res.status}: ${errorBody}`);
+  const configuredModel = process.env.MISTRAL_MODEL || 'mistral-small-latest';
+  const modelsToTry = [configuredModel];
+  if (!modelsToTry.includes('open-mistral-7b')) {
+    modelsToTry.push('open-mistral-7b');
   }
 
-  const data = await res.json();
-  const rawText = data.choices?.[0]?.message?.content;
-  if (!rawText) {
-    throw new Error('Mistral returned empty completion content');
+  let lastError = null;
+  for (const model of modelsToTry) {
+    try {
+      console.log(`[Mistral Provider] Initiating generation with model: ${model}`);
+
+      const res = await fetch('https://api.mistral.ai/v1/chat/completions', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${apiKey}`
+        },
+        body: JSON.stringify({
+          model,
+          messages: [
+            { role: 'system', content: `${systemPrompt}\n\nIMPORTANT: You must return strictly valid JSON conforming exactly to the requested schema. Do not include markdown preamble.` },
+            { role: 'user', content: userPrompt }
+          ],
+          response_format: { type: 'json_object' },
+          temperature
+        })
+      });
+
+      if (!res.ok) {
+        const errorBody = await res.text().catch(() => '');
+        throw new Error(`Mistral API (${model}) returned HTTP ${res.status}: ${errorBody}`);
+      }
+
+      const data = await res.json();
+      const rawText = data.choices?.[0]?.message?.content;
+      if (!rawText) {
+        throw new Error(`Mistral (${model}) returned empty completion content`);
+      }
+
+      return validateAndNormalizeJson(rawText, zodSchema, 'Mistral');
+    } catch (err) {
+      console.warn(`[Mistral Provider] Model ${model} attempt failed:`, err.message);
+      lastError = err;
+    }
   }
 
-  return validateAndNormalizeJson(rawText, zodSchema, 'Mistral');
+  throw lastError || new Error('All Mistral candidate models failed');
 }
 
 /**

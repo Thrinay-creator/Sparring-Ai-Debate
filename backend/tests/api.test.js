@@ -53,7 +53,7 @@ describe('Sparring API & Validation Tests', () => {
 
       // Should not be 400 Bad Request
       expect(res.status).not.toBe(400);
-    }, 30000);
+    }, 60000);
   });
 
   describe('Argument Length Validation', () => {
