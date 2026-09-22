@@ -21,10 +21,157 @@ export function getModelName() {
   return process.env.GEMINI_MODEL || 'gemini-3.5-flash';
 }
 
+/**
+ * Universal JSON normalizer and Zod schema validator across all AI providers.
+ */
+export function validateAndNormalizeJson(rawText, zodSchema, providerName = 'AI Provider') {
+  let clean = (rawText || '').trim();
+  if (clean.startsWith('```json')) {
+    clean = clean.replace(/^```json\s*/i, '').replace(/\s*```$/, '');
+  } else if (clean.startsWith('```')) {
+    clean = clean.replace(/^```\s*/, '').replace(/\s*```$/, '');
+  }
+
+  let parsedJson;
+  try {
+    parsedJson = JSON.parse(clean);
+  } catch (parseErr) {
+    console.error(`[${providerName}] JSON parse status: failed`, parseErr.message);
+    const err = new Error(`Failed to parse ${providerName} JSON output: ${parseErr.message}`);
+    err.code = 'GEMINI_PARSE_ERROR';
+    err.userMessage = 'Sparring received an incomplete response. Please retry.';
+    err.rawText = clean;
+    throw err;
+  }
+
+  if (parsedJson && typeof parsedJson === 'object') {
+    // Normalize fallacy: "none", "None", "null", "no fallacy", etc. -> null
+    if (typeof parsedJson.fallacy === 'string') {
+      const norm = parsedJson.fallacy.trim().toLowerCase();
+      if (['none', 'null', 'no fallacy', 'n/a', 'no_fallacy', 'nil', '', 'undefined'].includes(norm)) {
+        parsedJson.fallacy = null;
+      } else if (ALLOWED_FALLACIES.includes(norm)) {
+        parsedJson.fallacy = norm;
+      }
+    }
+
+    // Normalize argumentScore if returned as string
+    if (typeof parsedJson.argumentScore === 'string') {
+      const scoreNum = parseInt(parsedJson.argumentScore, 10);
+      if (!isNaN(scoreNum)) {
+        parsedJson.argumentScore = scoreNum;
+      }
+    }
+
+    // For feedback report: normalize dimensional scores if strings
+    ['overallScore', 'logicScore', 'evidenceScore', 'persuasivenessScore'].forEach((key) => {
+      if (typeof parsedJson[key] === 'string') {
+        const num = parseInt(parsedJson[key], 10);
+        if (!isNaN(num)) parsedJson[key] = num;
+      }
+    });
+  }
+
+  const zodResult = zodSchema.safeParse(parsedJson);
+  if (!zodResult.success) {
+    console.error(`[${providerName}] Zod schema validation failed:`, JSON.stringify(zodResult.error.issues, null, 2));
+    const err = new Error(`${providerName} response schema mismatch: ${zodResult.error.issues.map(i => `${i.path.join('.')}: ${i.message}`).join(', ')}`);
+    err.code = 'GEMINI_SCHEMA_ERROR';
+    err.userMessage = 'Sparring received an incomplete response. Please retry.';
+    err.issues = zodResult.error.issues;
+    err.parsed = parsedJson;
+    throw err;
+  }
+
+  console.log(`[${providerName}] Zod validation status: passed`);
+  return zodResult.data;
+}
 
 /**
- * Executes a structured content generation with Gemini, validates against a Zod schema,
- * and retries once if parsing or validation fails.
+ * Fallback Provider 1: Groq (llama-3.3-70b-versatile)
+ */
+export async function callGroqProvider({ systemPrompt, userPrompt, zodSchema, temperature = 0.7 }) {
+  const apiKey = process.env.GROQ_API_KEY;
+  if (!apiKey) return null;
+
+  const model = process.env.GROQ_MODEL || 'llama-3.3-70b-versatile';
+  console.log(`[Groq Provider] Initiating generation with model: ${model}`);
+
+  const res = await fetch('https://api.groq.com/openai/v1/chat/completions', {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      'Authorization': `Bearer ${apiKey}`
+    },
+    body: JSON.stringify({
+      model,
+      messages: [
+        { role: 'system', content: `${systemPrompt}\n\nIMPORTANT: You must return strictly valid JSON conforming exactly to the requested schema. Do not include markdown preamble.` },
+        { role: 'user', content: userPrompt }
+      ],
+      response_format: { type: 'json_object' },
+      temperature
+    })
+  });
+
+  if (!res.ok) {
+    const errorBody = await res.text().catch(() => '');
+    throw new Error(`Groq API returned HTTP ${res.status}: ${errorBody}`);
+  }
+
+  const data = await res.json();
+  const rawText = data.choices?.[0]?.message?.content;
+  if (!rawText) {
+    throw new Error('Groq returned empty completion content');
+  }
+
+  return validateAndNormalizeJson(rawText, zodSchema, 'Groq');
+}
+
+/**
+ * Fallback Provider 2: Mistral AI (mistral-small-latest)
+ */
+export async function callMistralProvider({ systemPrompt, userPrompt, zodSchema, temperature = 0.7 }) {
+  const apiKey = process.env.MISTRAL_API_KEY;
+  if (!apiKey) return null;
+
+  const model = process.env.MISTRAL_MODEL || 'mistral-small-latest';
+  console.log(`[Mistral Provider] Initiating generation with model: ${model}`);
+
+  const res = await fetch('https://api.mistral.ai/v1/chat/completions', {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      'Authorization': `Bearer ${apiKey}`
+    },
+    body: JSON.stringify({
+      model,
+      messages: [
+        { role: 'system', content: `${systemPrompt}\n\nIMPORTANT: You must return strictly valid JSON conforming exactly to the requested schema. Do not include markdown preamble.` },
+        { role: 'user', content: userPrompt }
+      ],
+      response_format: { type: 'json_object' },
+      temperature
+    })
+  });
+
+  if (!res.ok) {
+    const errorBody = await res.text().catch(() => '');
+    throw new Error(`Mistral API returned HTTP ${res.status}: ${errorBody}`);
+  }
+
+  const data = await res.json();
+  const rawText = data.choices?.[0]?.message?.content;
+  if (!rawText) {
+    throw new Error('Mistral returned empty completion content');
+  }
+
+  return validateAndNormalizeJson(rawText, zodSchema, 'Mistral');
+}
+
+/**
+ * Executes a structured content generation with Gemini (primary), with automatic failover
+ * to Groq and Mistral AI if rate limits or service unavailability occur.
  */
 export async function generateStructuredContent({
   systemPrompt,
@@ -36,6 +183,24 @@ export async function generateStructuredContent({
 }) {
   const apiKey = process.env.GEMINI_API_KEY;
   if (!apiKey) {
+    // If Gemini key is missing, attempt direct failover if secondary keys are present
+    if (process.env.GROQ_API_KEY) {
+      try {
+        console.log('[AI Gateway] No Gemini key found. Directing to Groq provider...');
+        return await callGroqProvider({ systemPrompt, userPrompt, zodSchema, temperature });
+      } catch (e) {
+        console.warn('[AI Gateway] Groq direct invocation failed:', e.message);
+      }
+    }
+    if (process.env.MISTRAL_API_KEY) {
+      try {
+        console.log('[AI Gateway] No Gemini key found. Directing to Mistral provider...');
+        return await callMistralProvider({ systemPrompt, userPrompt, zodSchema, temperature });
+      } catch (e) {
+        console.warn('[AI Gateway] Mistral direct invocation failed:', e.message);
+      }
+    }
+
     const err = new Error('Gemini API key is not configured on the backend.');
     err.code = 'CONFIG_ERROR';
     err.userMessage = 'Backend AI configuration is missing. Please set GEMINI_API_KEY in backend/.env';
@@ -43,10 +208,6 @@ export async function generateStructuredContent({
   }
 
   const ai = getGeminiClient();
-  const model = getModelName();
-
-  console.log(`[Gemini Service] Runtime model: ${model}`);
-
   const contents = [
     {
       role: 'user',
@@ -104,73 +265,7 @@ export async function generateStructuredContent({
     console.log('[Gemini Service] Text extracted successfully: yes');
     console.log(`[Gemini Service] Text extraction successful (${rawText.length} characters)`);
 
-    // Clean JSON markdown fences if present
-    let clean = rawText.trim();
-    if (clean.startsWith('```json')) {
-      clean = clean.replace(/^```json\s*/i, '').replace(/\s*```$/, '');
-    } else if (clean.startsWith('```')) {
-      clean = clean.replace(/^```\s*/, '').replace(/\s*```$/, '');
-    }
-
-    let parsedJson;
-    try {
-      parsedJson = JSON.parse(clean);
-      console.log('[Gemini Service] JSON parse status: success');
-    } catch (parseErr) {
-      console.error('[Gemini Service] JSON parse status: failed');
-      console.error('[Gemini Service] JSON parsing failed:', parseErr.message, 'Raw preview:', clean.slice(0, 150));
-      const err = new Error(`Failed to parse Gemini JSON output: ${parseErr.message}`);
-      err.code = 'GEMINI_PARSE_ERROR';
-      err.userMessage = 'Sparring received an incomplete response. Please retry.';
-      err.rawText = clean;
-      throw err;
-    }
-
-    // Safe deterministic normalization of model quirks before Zod validation
-    if (parsedJson && typeof parsedJson === 'object') {
-      // Normalize fallacy: "none", "None", "null", "no fallacy", etc. -> null
-      if (typeof parsedJson.fallacy === 'string') {
-        const norm = parsedJson.fallacy.trim().toLowerCase();
-        if (['none', 'null', 'no fallacy', 'n/a', 'no_fallacy', 'nil', '', 'undefined'].includes(norm)) {
-          console.log(`[Gemini Service] Normalized fallacy '${parsedJson.fallacy}' to null`);
-          parsedJson.fallacy = null;
-        } else if (ALLOWED_FALLACIES.includes(norm)) {
-          parsedJson.fallacy = norm;
-        }
-      }
-
-      // Normalize argumentScore if returned as string
-      if (typeof parsedJson.argumentScore === 'string') {
-        const scoreNum = parseInt(parsedJson.argumentScore, 10);
-        if (!isNaN(scoreNum)) {
-          parsedJson.argumentScore = scoreNum;
-        }
-      }
-
-      // For feedback report: normalize dimensional scores if strings
-      ['overallScore', 'logicScore', 'evidenceScore', 'persuasivenessScore'].forEach((key) => {
-        if (typeof parsedJson[key] === 'string') {
-          const num = parseInt(parsedJson[key], 10);
-          if (!isNaN(num)) parsedJson[key] = num;
-        }
-      });
-    }
-
-    // Zod validation
-    const zodResult = zodSchema.safeParse(parsedJson);
-    if (!zodResult.success) {
-      console.error('[Gemini Service] Zod validation status: failed');
-      console.error('[Gemini Service] Zod schema validation failed:', JSON.stringify(zodResult.error.issues, null, 2));
-      const err = new Error(`Gemini response schema mismatch: ${zodResult.error.issues.map(i => `${i.path.join('.')}: ${i.message}`).join(', ')}`);
-      err.code = 'GEMINI_SCHEMA_ERROR';
-      err.userMessage = 'Sparring received an incomplete response. Please retry.';
-      err.issues = zodResult.error.issues;
-      err.parsed = parsedJson;
-      throw err;
-    }
-
-    console.log('[Gemini Service] Zod validation status: passed');
-    return zodResult.data;
+    return validateAndNormalizeJson(rawText, zodSchema, 'Gemini');
   };
 
   const primaryModel = getModelName();
@@ -239,7 +334,6 @@ export async function generateStructuredContent({
   for (let mIdx = 0; mIdx < candidateModels.length; mIdx++) {
     const currentModel = candidateModels[mIdx];
     try {
-      // Attempt 1 with currentModel
       try {
         const response = await executeCallWithModel(currentModel, contents);
         return extractAndValidate(response);
@@ -279,6 +373,37 @@ export async function generateStructuredContent({
         console.warn(`[Gemini Service] Model ${currentModel} encountered ${modelErr.code}. Engaging fallback model ${candidateModels[mIdx + 1]}...`);
         await new Promise((resolve) => setTimeout(resolve, 500));
         continue;
+      }
+
+      // Gemini candidate models exhausted or quota reached.
+      // Engage secondary multi-provider fallbacks if keys are configured.
+
+      // Fallback 1: Groq
+      if (process.env.GROQ_API_KEY) {
+        try {
+          console.warn(`[AI Failover] Engaging Groq fallback after Gemini ${modelErr.code || 'error'}...`);
+          const groqResult = await callGroqProvider({ systemPrompt, userPrompt, zodSchema, temperature });
+          if (groqResult) {
+            console.log('[AI Failover] Successfully generated response using Groq fallback.');
+            return groqResult;
+          }
+        } catch (groqErr) {
+          console.error('[AI Failover] Groq fallback failed:', groqErr?.message);
+        }
+      }
+
+      // Fallback 2: Mistral AI
+      if (process.env.MISTRAL_API_KEY) {
+        try {
+          console.warn(`[AI Failover] Engaging Mistral AI fallback after Gemini ${modelErr.code || 'error'}...`);
+          const mistralResult = await callMistralProvider({ systemPrompt, userPrompt, zodSchema, temperature });
+          if (mistralResult) {
+            console.log('[AI Failover] Successfully generated response using Mistral AI fallback.');
+            return mistralResult;
+          }
+        } catch (mistralErr) {
+          console.error('[AI Failover] Mistral fallback failed:', mistralErr?.message);
+        }
       }
 
       throw modelErr;
