@@ -4,7 +4,7 @@ import { useLanguage } from '../i18n';
 import { LogIn, ArrowLeft, AlertCircle, Sparkles, Mail, Lock } from 'lucide-react';
 
 export default function LoginPage({ onNavigate, onSuccess }) {
-  const { login, continueAsGuest, isMockModeActive, error: authError, clearError } = useAuth();
+  const { login, continueAsGuest, error: authError, clearError } = useAuth();
   const { t } = useLanguage();
 
   const [email, setEmail] = useState('');
@@ -73,11 +73,6 @@ export default function LoginPage({ onNavigate, onSuccess }) {
           <p className="text-xs text-chamber-muted">
             {t('auth.loginSubtitle')}
           </p>
-          {isMockModeActive && (
-            <div className="mt-1 px-2.5 py-1 rounded bg-amber-950/40 border border-amber-700/50 text-[11px] text-amber-300">
-              ⚡ Local Mock Mode active (no live Supabase keys configured)
-            </div>
-          )}
         </div>
 
         {/* Error banner */}
