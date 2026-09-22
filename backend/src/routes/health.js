@@ -15,6 +15,7 @@ router.get('/health', async (req, res) => {
 
     if (req.query.test_provider === 'mistral' && process.env.MISTRAL_API_KEY) {
       try {
+        const testModel = req.query.model || process.env.MISTRAL_MODEL || 'mistral-small-latest';
         const testRes = await fetch('https://api.mistral.ai/v1/chat/completions', {
           method: 'POST',
           headers: {
@@ -22,13 +23,14 @@ router.get('/health', async (req, res) => {
             'Authorization': `Bearer ${process.env.MISTRAL_API_KEY}`
           },
           body: JSON.stringify({
-            model: process.env.MISTRAL_MODEL || 'mistral-small-latest',
+            model: testModel,
             messages: [{ role: 'user', content: 'Say "hello" in JSON {"greeting":"hello"}' }],
             response_format: { type: 'json_object' }
           })
         });
         const bodyText = await testRes.text();
         diagnostic.mistral_test = {
+          model: testModel,
           status: testRes.status,
           ok: testRes.ok,
           response: bodyText.slice(0, 300)
