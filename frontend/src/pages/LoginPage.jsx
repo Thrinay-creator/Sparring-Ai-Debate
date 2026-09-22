@@ -96,7 +96,6 @@ export default function LoginPage({ onNavigate, onSuccess }) {
                 required
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
-                placeholder={t('auth.emailPlaceholder')}
                 className="w-full pl-9 pr-3 py-2 bg-chamber-surfaceAlt border border-chamber-border rounded-md text-sm text-chamber-text placeholder-chamber-muted focus:outline-none focus:border-chamber-amber"
               />
             </div>
@@ -122,7 +121,6 @@ export default function LoginPage({ onNavigate, onSuccess }) {
                 required
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
-                placeholder={t('auth.passwordPlaceholder')}
                 className="w-full pl-9 pr-3 py-2 bg-chamber-surfaceAlt border border-chamber-border rounded-md text-sm text-chamber-text placeholder-chamber-muted focus:outline-none focus:border-chamber-amber"
               />
             </div>
