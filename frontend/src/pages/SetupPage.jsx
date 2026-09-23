@@ -6,10 +6,11 @@ import { validateSetup } from '../utils/validation';
 import { Swords, History, ChevronRight, AlertCircle, Sparkles, Settings, User, LogOut } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import { useLanguage } from '../i18n';
+import { getLocalizedTopic } from '../data/topics';
 
 export default function SetupPage({ onStartDebate, pastSessions = [], onSelectSession, onOpenSettings, onOpenAuth, onNavigate, initialTopic = '' }) {
   const { user, isAuthenticated, logout } = useAuth();
-  const { t } = useLanguage();
+  const { t, language } = useLanguage();
   const [topic, setTopic] = useState(initialTopic || '');
   const [userStance, setUserStance] = useState('FOR');
   const [difficulty, setDifficulty] = useState('SHARP');
@@ -46,10 +47,10 @@ export default function SetupPage({ onStartDebate, pastSessions = [], onSelectSe
                   type="button"
                   onClick={() => onNavigate('/history')}
                   className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-md bg-chamber-surface border border-chamber-border text-xs text-chamber-text hover:border-chamber-amber transition-colors"
-                  title="View Debate History"
+                  title={t('setup.history')}
                 >
                   <History className="w-3.5 h-3.5 text-chamber-amber" />
-                  <span>History</span>
+                  <span>{t('setup.history')}</span>
                 </button>
               )}
 
@@ -76,7 +77,7 @@ export default function SetupPage({ onStartDebate, pastSessions = [], onSelectSe
             <>
               {/* Guest badge */}
               <span className="hidden sm:inline-block px-2 py-1 rounded bg-chamber-surface border border-chamber-border text-[11px] text-chamber-muted font-mono">
-                Guest
+                {t('setup.guest')}
               </span>
 
               {/* Sign In Button */}
@@ -97,8 +98,8 @@ export default function SetupPage({ onStartDebate, pastSessions = [], onSelectSe
             type="button"
             onClick={onOpenSettings}
             className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-md bg-chamber-surface border border-chamber-border text-xs text-chamber-muted hover:text-chamber-text hover:border-slate-500 transition-colors focus:outline-none focus:ring-2 focus:ring-chamber-amber"
-            title="Theme Preferences"
-            aria-label="Open Theme Preferences"
+            title={t('debate.themePreferences')}
+            aria-label={t('debate.themePreferences')}
           >
             <Settings className="w-3.5 h-3.5" />
             <span>{t('settings.title')}</span>
@@ -174,10 +175,10 @@ export default function SetupPage({ onStartDebate, pastSessions = [], onSelectSe
               >
                 <div className="space-y-0.5 truncate pr-4">
                   <div className="text-sm font-medium text-chamber-text truncate group-hover:text-chamber-amber transition-colors">
-                    {session.topic}
+                    {getLocalizedTopic(session.topic, language)}
                   </div>
                   <div className="text-xs text-chamber-muted flex items-center gap-3">
-                    <span>{t('setup.stanceLabel')}: <strong className="text-chamber-user">{session.userStance}</strong></span>
+                    <span>{t('setup.stanceLabel')}: <strong className="text-chamber-user">{session.userStance === 'FOR' ? t('setup.for') : t('setup.against')}</strong></span>
                     <span>•</span>
                     <span>{t('setup.score')}: <strong className="text-chamber-amber">{session.feedback?.overallScore || 'N/A'}/100</strong></span>
                     <span>•</span>

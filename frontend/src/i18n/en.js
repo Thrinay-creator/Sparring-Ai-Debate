@@ -22,6 +22,8 @@ export default {
     forDesc: "You defend the premise. The AI will challenge your arguments.",
     againstLabel: "AGAINST (Negative)",
     againstDesc: "You reject the premise. The AI will defend the affirmative case.",
+    for: "FOR",
+    against: "AGAINST",
     pro: "PRO",
     con: "CON",
     youStance: "You",
@@ -31,6 +33,8 @@ export default {
     enterChamber: "Enter Debate Chamber",
     roundsRule: "6 rounds maximum. 1 user argument + 1 AI rebuttal per round.",
     recentReports: "Recent Sparring Reports",
+    history: "History",
+    guest: "Guest",
     view: "View",
     score: "Score"
   },
@@ -79,12 +83,28 @@ export default {
     inputSpeaking: "AI is speaking rebuttal...",
     inputThinking: "Sparring AI is formulating its counterargument...",
     listeningMsg: "Listening to your argument... Speak clearly into microphone",
+    processingSpeech: "Processing speech...",
     aiSpeakingMsg: "AI is speaking rebuttal... (Microphone temporarily paused to avoid feedback)",
     minChars: "(min {min} chars)",
+    chars: "chars",
     sendArgument: "Send Argument",
     retryTurn: "Retry Turn",
     dictateMic: "Dictate argument via microphone",
-    stopListening: "Stop listening"
+    dictateMicAria: "Dictate argument via microphone",
+    stopListening: "Stop listening",
+    returnHome: "Return to Home",
+    stopSpeechAudio: "Stop AI speech audio",
+    concludeTooltip: "Conclude debate and get feedback",
+    concludeDisabledTooltip: "Available after submitting your opening argument"
+  },
+
+  // Voice & Speech
+  voice: {
+    notSupported: "Voice input is not supported in this browser. You can continue with text.",
+    permissionDenied: "Microphone access denied. Please check browser permissions.",
+    langNotSupported: "Speech recognition in {lang} ({locale}) is not supported on this browser.",
+    voiceUnavailable: "Browser voice for {lang} is not installed on this device. Audio output will be muted, but text debate continues.",
+    genericError: "Voice recognition note: {error}"
   },
 
   // Summary Page
@@ -109,8 +129,11 @@ export default {
     noFallacies: "No clear logical fallacies detected. Your arguments maintained structural discipline.",
     suggestionsTitle: "Actionable Argument Enhancements",
     noSuggestions: "No specific suggestions available.",
-    reviewTranscript: "Review Full Debate Transcript ({count} messages)",
-    startAnother: "Start Another Sparring Session"
+    reviewTranscript: "Review Full Debate Transcript ({count} turns)",
+    startAnother: "Start Another Sparring Session",
+    guestPrompt: "Create an account to save your debate history across devices.",
+    createAccountBtn: "Create Account",
+    continueGuestBtn: "Continue as Guest"
   },
 
   // Settings Modal
@@ -148,6 +171,7 @@ export default {
     hasAccount: "Already have an account?",
     signIn: "Sign in",
     logout: "Logout",
+    guest: "Guest",
     continueGuest: "Continue as Guest",
     loggedInAs: "Logged in as"
   }

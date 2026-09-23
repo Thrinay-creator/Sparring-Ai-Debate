@@ -14,6 +14,7 @@ import {
 } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
 import { useLanguage } from '../../i18n';
+import { getLocalizedTopic } from '../../data/topics';
 
 const DIFFICULTY_ICONS = {
   NEWBIE: Shield,
@@ -35,13 +36,17 @@ export default function DebateHeader({
   isFinishing
 }) {
   const { user, isAuthenticated, logout } = useAuth();
-  const { t } = useLanguage();
+  const { t, language } = useLanguage();
   const [showConfirmModal, setShowConfirmModal] = useState(false);
   const [showLeaveModal, setShowLeaveModal] = useState(false);
 
   const DiffIcon = DIFFICULTY_ICONS[session.difficulty] || Flame;
   const userTurnsCount = session.transcript.filter(t => t.role === 'user').length;
   const canFinish = userTurnsCount > 0 && !isThinking && !isFinishing;
+  const displayTopic = getLocalizedTopic(session.topic, language);
+  const diffLabel = t(`difficulties.${session.difficulty}.label`) || session.difficulty;
+  const userStanceLabel = session.userStance === 'FOR' ? t('setup.for') : t('setup.against');
+  const aiStanceLabel = session.aiStance === 'FOR' ? t('setup.for') : t('setup.against');
 
   const handleLogoClick = () => {
     if (!onNavigateHome) return;
@@ -75,20 +80,20 @@ export default function DebateHeader({
               type="button"
               onClick={handleLogoClick}
               className="font-serif text-xl text-chamber-text font-bold tracking-tight hover:text-chamber-amber transition-colors focus:outline-none flex items-center gap-1.5 text-left"
-              title="Return to Home"
+              title={t('debate.returnHome')}
             >
               <span>{t('brand')}</span>
             </button>
             <span className="text-xs px-2 py-0.5 rounded bg-chamber-surface border border-chamber-border font-mono text-chamber-amber flex items-center gap-1">
               <DiffIcon className="w-3 h-3" />
-              {session.difficulty}
+              {diffLabel}
             </span>
             <span className="text-xs font-mono text-chamber-muted px-2 py-0.5 rounded bg-chamber-surface border border-chamber-border">
               {t('round')} {Math.min(session.round || 1, 6)} {t('of')} 6
             </span>
           </div>
-          <h2 className="text-xs sm:text-sm font-medium text-chamber-text truncate max-w-xl" title={session.topic}>
-            {session.topic}
+          <h2 className="text-xs sm:text-sm font-medium text-chamber-text truncate max-w-xl" title={displayTopic}>
+            {displayTopic}
           </h2>
         </div>
 
@@ -97,11 +102,11 @@ export default function DebateHeader({
           {/* Stance Badges */}
           <div className="flex items-center gap-1.5 text-xs font-mono">
             <span className="px-2 py-1 rounded bg-chamber-userBg border border-chamber-userBorder text-chamber-user font-semibold">
-              {t('setup.youStance')}: {session.userStance}
+              {t('setup.youStance')}: {userStanceLabel}
             </span>
             <span className="text-chamber-muted text-[11px]">{t('vs')}</span>
             <span className="px-2 py-1 rounded bg-chamber-aiBg border border-chamber-aiBorder text-chamber-ai font-semibold">
-              {t('setup.opponentStance')}: {session.aiStance}
+              {t('setup.opponentStance')}: {aiStanceLabel}
             </span>
           </div>
 
@@ -111,7 +116,7 @@ export default function DebateHeader({
               type="button"
               onClick={onStopSpeaking}
               className="px-2.5 py-1 rounded bg-amber-500/20 border border-chamber-amber text-chamber-amber hover:bg-amber-500/30 text-xs font-medium flex items-center gap-1.5 transition-colors animate-pulse"
-              title="Stop AI speech audio"
+              title={t('debate.stopSpeechAudio')}
             >
               <Square className="w-3 h-3 fill-current" />
               <span>{t('debate.stopSpeaking')}</span>
@@ -184,7 +189,7 @@ export default function DebateHeader({
                 ? 'bg-chamber-surface border border-chamber-border hover:border-chamber-amber hover:text-chamber-amber text-chamber-text shadow-sm'
                 : 'bg-chamber-surface/50 border border-chamber-border/40 text-chamber-muted/40 cursor-not-allowed'
             }`}
-            title={canFinish ? 'Conclude debate and get feedback' : 'Available after submitting your opening argument'}
+            title={canFinish ? t('debate.concludeTooltip') : t('debate.concludeDisabledTooltip')}
           >
             <Flag className="w-3.5 h-3.5" />
             <span>{t('debate.finishDebate')}</span>

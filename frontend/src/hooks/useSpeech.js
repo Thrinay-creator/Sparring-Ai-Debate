@@ -2,7 +2,7 @@ import { useState, useEffect, useRef, useCallback } from 'react';
 import { LANGUAGE_CONFIG } from '../i18n';
 import { getStoredVoiceSpeed, saveStoredVoiceSpeed } from '../utils/storage';
 
-export function useSpeech({ language = 'en' } = {}) {
+export function useSpeech({ language = 'en', t } = {}) {
   const [voiceState, setVoiceState] = useState('IDLE'); // 'IDLE' | 'LISTENING' | 'PROCESSING' | 'AI_SPEAKING'
   const [isMuted, setIsMuted] = useState(false);
   const [errorMessage, setErrorMessage] = useState(null);
@@ -21,6 +21,19 @@ export function useSpeech({ language = 'en' } = {}) {
   const recognitionLang = LANGUAGE_CONFIG[language]?.recognition || 'en-IN';
   const speechLang = LANGUAGE_CONFIG[language]?.speech || 'en-IN';
 
+  // Translate helper with safe fallback
+  const translate = useCallback((key, params = {}) => {
+    if (typeof t === 'function') {
+      return t(key, params);
+    }
+    // Fallback if t not provided
+    if (key === 'voice.notSupported') return "Voice input is not supported in this browser. You can continue with text.";
+    if (key === 'voice.permissionDenied') return "Microphone access denied. Please check browser permissions.";
+    if (key === 'voice.langNotSupported') return `Speech recognition in ${params.lang || ''} (${params.locale || ''}) is not supported on this browser.`;
+    if (key === 'voice.voiceUnavailable') return `Browser voice for ${params.lang || ''} is unavailable on this device. Audio output will be muted, but text debate continues.`;
+    return params.error ? `Voice recognition note: ${params.error}` : key;
+  }, [t]);
+
   // Populate synthesis voices and listen to voiceschanged event
   useEffect(() => {
     if (!synthesisSupported || !window.speechSynthesis) return;
@@ -37,6 +50,21 @@ export function useSpeech({ language = 'en' } = {}) {
       window.speechSynthesis.onvoiceschanged = loadVoices;
     }
   }, [synthesisSupported]);
+
+  // Handle dynamic language switching during active recognition or speech
+  useEffect(() => {
+    if (recognitionRef.current) {
+      try {
+        recognitionRef.current.abort();
+      } catch {}
+      recognitionRef.current = null;
+      setVoiceState('IDLE');
+    }
+
+    if (synthesisSupported && window.speechSynthesis) {
+      window.speechSynthesis.cancel();
+    }
+  }, [language, synthesisSupported]);
 
   // Clean up recognition and speech synthesis on unmount
   useEffect(() => {
@@ -64,7 +92,7 @@ export function useSpeech({ language = 'en' } = {}) {
   // Start listening for user speech
   const startListening = useCallback((onTranscriptReceived) => {
     if (!recognitionSupported) {
-      setErrorMessage("Voice input isn't supported in this browser. You can continue with text.");
+      setErrorMessage(translate('voice.notSupported'));
       return;
     }
 
@@ -105,11 +133,14 @@ export function useSpeech({ language = 'en' } = {}) {
     recognition.onerror = (event) => {
       console.warn('[Speech Recognition Error]:', event.error);
       if (event.error === 'not-allowed') {
-        setErrorMessage('Microphone access denied. Please check browser permissions.');
+        setErrorMessage(translate('voice.permissionDenied'));
       } else if (event.error === 'language-not-supported') {
-        setErrorMessage(`Speech recognition in ${language.toUpperCase()} (${recognitionLang}) is not supported on this browser.`);
+        setErrorMessage(translate('voice.langNotSupported', { 
+          lang: language.toUpperCase(), 
+          locale: recognitionLang 
+        }));
       } else if (event.error !== 'no-speech' && event.error !== 'aborted') {
-        setErrorMessage(`Voice recognition note: ${event.error}`);
+        setErrorMessage(translate('voice.genericError', { error: event.error }));
       }
       setVoiceState('IDLE');
     };
@@ -128,7 +159,7 @@ export function useSpeech({ language = 'en' } = {}) {
       setVoiceState('IDLE');
       recognitionRef.current = null;
     }
-  }, [recognitionSupported, voiceState, recognitionLang, language]);
+  }, [recognitionSupported, voiceState, recognitionLang, language, translate]);
 
   // Stop listening manually
   const stopListening = useCallback(() => {
@@ -189,6 +220,12 @@ export function useSpeech({ language = 'en' } = {}) {
 
     if (matchedVoice) {
       utterance.voice = matchedVoice;
+      setErrorMessage(null);
+    } else if (availableVoices.length > 0 && langPrefix !== 'en') {
+      // Browser voice for this non-English language is unavailable
+      setErrorMessage(translate('voice.voiceUnavailable', { 
+        lang: LANGUAGE_CONFIG[language]?.aiLanguage || language 
+      }));
     }
 
     utterance.onstart = () => {
@@ -206,7 +243,7 @@ export function useSpeech({ language = 'en' } = {}) {
     };
 
     window.speechSynthesis.speak(utterance);
-  }, [synthesisSupported, isMuted, voiceSpeed, speechLang, voices]);
+  }, [synthesisSupported, isMuted, voiceSpeed, speechLang, voices, language, translate]);
 
   // Stop speaking immediately
   const stopSpeaking = useCallback(() => {

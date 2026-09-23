@@ -105,7 +105,7 @@ export default function ArgumentInput({
         {voiceState === 'PROCESSING' && (
           <div className="flex items-center gap-2 text-xs text-chamber-amber font-medium px-2 py-1">
             <span className="w-2 h-2 rounded-full bg-chamber-amber animate-pulse"></span>
-            <span>Processing speech...</span>
+            <span>{t('debate.processingSpeech')}</span>
           </div>
         )}
 
@@ -147,7 +147,7 @@ export default function ArgumentInput({
                     : 'text-chamber-muted'
                 }`}
               >
-                {charCount} / {MAX_ARGUMENT_LENGTH} chars
+                {charCount} / {MAX_ARGUMENT_LENGTH} {t('debate.chars')}
               </span>
               {isTooShort && (
                 <span className="text-[11px] text-amber-400/80">
@@ -170,7 +170,7 @@ export default function ArgumentInput({
                       : 'bg-chamber-surface border-chamber-border text-chamber-muted hover:text-chamber-text hover:border-slate-500'
                   } disabled:opacity-40 disabled:cursor-not-allowed`}
                   title={voiceState === 'LISTENING' ? t('debate.stopListening') : t('debate.dictateMic')}
-                  aria-label="Dictate argument via microphone"
+                  aria-label={t('debate.dictateMicAria')}
                 >
                   {voiceState === 'LISTENING' ? <MicOff className="w-4 h-4" /> : <Mic className="w-4 h-4" />}
                 </button>

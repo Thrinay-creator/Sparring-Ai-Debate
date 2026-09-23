@@ -17,8 +17,8 @@ import { useLanguage } from './i18n';
 import { useAuth } from './context/AuthContext';
 
 export default function App() {
-  const { language } = useLanguage();
-  const speech = useSpeech({ language });
+  const { language, t } = useLanguage();
+  const speech = useSpeech({ language, t });
   const theme = useTheme();
   const { currentPath, navigate } = useRouter();
   const { user, isAuthenticated, isGuest, authLoading, logout, continueAsGuest } = useAuth();
@@ -55,6 +55,8 @@ export default function App() {
   });
 
   const AUTH_ROUTES = ['/login', '/signup', '/forgot-password', '/reset-password'];
+  const KNOWN_ROUTES = ['/', '/debate', '/history', ...AUTH_ROUTES];
+  const isLandingRoute = currentPath === '/' || !KNOWN_ROUTES.includes(currentPath);
 
   // Guard routes: Protect routes based on initialized authentication status
   useEffect(() => {
@@ -171,8 +173,8 @@ export default function App() {
         />
       )}
 
-      {/* Active Debate Session View */}
-      {isDebatingActive && (
+      {/* Active Debate Session View (Only when currentPath is /debate) */}
+      {currentPath === '/debate' && isDebatingActive && (
         <DebatePage
           session={session}
           stage={stage}
@@ -191,8 +193,8 @@ export default function App() {
         />
       )}
 
-      {/* Debate Summary View */}
-      {isSummaryActive && (
+      {/* Debate Summary View (Only when currentPath is /debate) */}
+      {currentPath === '/debate' && isSummaryActive && (
         <SummaryPage
           session={session}
           onStartNewDebate={() => {
@@ -218,8 +220,8 @@ export default function App() {
         />
       )}
 
-      {/* Route: / (Default MotionSites-Inspired Landing Page) */}
-      {currentPath === '/' && !isDebatingActive && !isSummaryActive && (
+      {/* Route: / (Default MotionSites-Inspired Landing Page or Fallback) */}
+      {isLandingRoute && !isDebatingActive && !isSummaryActive && (
         <LandingPage
           onStartDebating={() => handleLaunchDebate()}
           onStartDebateWithTopic={(topic) => handleLaunchDebate(topic)}

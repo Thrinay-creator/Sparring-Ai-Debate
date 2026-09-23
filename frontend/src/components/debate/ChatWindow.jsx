@@ -2,6 +2,7 @@ import React, { useEffect, useRef } from 'react';
 import ChatMessage from './ChatMessage';
 import LoadingIndicator from './LoadingIndicator';
 import { Swords, Sparkles } from 'lucide-react';
+import { useLanguage } from '../../i18n';
 
 export default function ChatWindow({
   transcript,
@@ -9,15 +10,18 @@ export default function ChatWindow({
   isFinishing,
   session
 }) {
+  const { t } = useLanguage();
   const bottomRef = useRef(null);
 
   useEffect(() => {
     bottomRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, [transcript, isThinking, isFinishing]);
 
+  const stanceLabel = session.aiStance === 'FOR' ? t('setup.for') : t('setup.against');
+
   const openingMessage = {
     role: 'ai',
-    content: `I will be defending the opposing position (${session.aiStance}). State your opening case with your best rationale and evidence.`
+    content: t('debate.openingPrompt', { stance: stanceLabel })
   };
 
   return (
@@ -26,11 +30,10 @@ export default function ChatWindow({
       <div className="text-center my-4 py-3 px-4 rounded-lg bg-[#161B22]/60 border border-chamber-border/60 text-xs text-chamber-muted max-w-lg mx-auto">
         <div className="flex items-center justify-center gap-1.5 font-medium text-chamber-amber mb-1">
           <Swords className="w-3.5 h-3.5" />
-          <span>Debate Chamber Active</span>
+          <span>{t('debate.chamberActive')}</span>
         </div>
         <p>
-          Opponent stance: <strong className="text-chamber-ai">{session.aiStance}</strong>. 
-          Respond directly to challenges. 6 rounds total.
+          {t('debate.chamberActiveDesc', { stance: stanceLabel })}
         </p>
       </div>
 
@@ -49,7 +52,7 @@ export default function ChatWindow({
       {/* AI Formulating State */}
       {isThinking && (
         <div className="flex justify-start">
-          <LoadingIndicator label="Sparring AI is analyzing your logic..." />
+          <LoadingIndicator label={t('debate.thinking')} />
         </div>
       )}
 
@@ -59,10 +62,10 @@ export default function ChatWindow({
           <div className="p-4 rounded-lg bg-chamber-surface border border-chamber-amber text-center space-y-2 max-w-md shadow-xl animate-message-in">
             <div className="flex items-center justify-center gap-2 text-chamber-amber font-semibold text-sm">
               <Sparkles className="w-4 h-4 animate-spin" />
-              <span>Six Rounds Complete</span>
+              <span>{t('debate.finishingTitle')}</span>
             </div>
             <p className="text-xs text-chamber-muted leading-relaxed">
-              Adjudicating complete debate transcript... Evaluating logic consistency, evidence rigor, and fallacies.
+              {t('debate.finishingDesc')}
             </p>
           </div>
         </div>

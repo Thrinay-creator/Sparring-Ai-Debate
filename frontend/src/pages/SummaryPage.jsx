@@ -38,7 +38,7 @@ export default function SummaryPage({
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 p-4 rounded-lg bg-chamber-surface border border-chamber-border text-xs animate-message-in shadow-sm">
           <div className="flex items-center gap-2.5 text-chamber-text">
             <Sparkles className="w-4 h-4 text-chamber-amber shrink-0" />
-            <span>Create an account to save your debate history across devices.</span>
+            <span>{t('summary.guestPrompt')}</span>
           </div>
           <div className="flex items-center gap-2 shrink-0">
             <button
@@ -46,14 +46,14 @@ export default function SummaryPage({
               onClick={() => onNavigate('/signup')}
               className="px-3.5 py-1.5 rounded bg-chamber-amber hover:bg-amber-500 text-[#11141A] font-semibold text-xs transition-colors"
             >
-              Create Account
+              {t('summary.createAccountBtn')}
             </button>
             <button
               type="button"
               onClick={() => setDismissGuestPrompt(true)}
               className="px-3 py-1.5 rounded bg-chamber-surfaceAlt hover:bg-[#202733] border border-chamber-border text-chamber-muted hover:text-chamber-text text-xs transition-colors"
             >
-              Continue as Guest
+              {t('summary.continueGuestBtn')}
             </button>
           </div>
         </div>
