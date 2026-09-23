@@ -167,6 +167,9 @@ export async function callGroqProvider({ systemPrompt, userPrompt, zodSchema, te
     } catch (err) {
       console.warn(`[Groq Provider] Model ${model} attempt failed:`, err.message);
       lastError = err;
+      if (model !== modelsToTry[modelsToTry.length - 1]) {
+        await new Promise((r) => setTimeout(r, 1000));
+      }
     }
   }
 
@@ -174,19 +177,22 @@ export async function callGroqProvider({ systemPrompt, userPrompt, zodSchema, te
 }
 
 /**
- * Fallback Provider 2: Mistral AI (mistral-small-latest, open-mistral-7b, ministral-8b-latest)
+ * Fallback Provider 2: Mistral AI (open-mistral-7b, ministral-8b-latest, mistral-small-latest)
  */
 export async function callMistralProvider({ systemPrompt, userPrompt, zodSchema, temperature = 0.7 }) {
   const apiKey = (process.env.MISTRAL_API_KEY || process.env.MISTRAL_KEY || process.env.MISTRAL_APIKEY || '').trim();
   if (!apiKey) return null;
 
-  const configuredModel = process.env.MISTRAL_MODEL || 'mistral-small-latest';
+  const configuredModel = process.env.MISTRAL_MODEL || 'open-mistral-7b';
   const modelsToTry = [configuredModel];
   if (!modelsToTry.includes('open-mistral-7b')) {
     modelsToTry.push('open-mistral-7b');
   }
   if (!modelsToTry.includes('ministral-8b-latest')) {
     modelsToTry.push('ministral-8b-latest');
+  }
+  if (!modelsToTry.includes('mistral-small-latest')) {
+    modelsToTry.push('mistral-small-latest');
   }
 
   let langGuidance = '';
@@ -236,6 +242,9 @@ export async function callMistralProvider({ systemPrompt, userPrompt, zodSchema,
     } catch (err) {
       console.warn(`[Mistral Provider] Model ${model} attempt failed:`, err.message);
       lastError = err;
+      if (model !== modelsToTry[modelsToTry.length - 1]) {
+        await new Promise((r) => setTimeout(r, 1000));
+      }
     }
   }
 
