@@ -3,24 +3,28 @@ import { Router } from 'express';
 const router = Router();
 
 router.get('/health', async (req, res) => {
+  const geminiKey = (process.env.GEMINI_API_KEY || process.env.GEMINI_KEY || '').trim();
+  const groqKey = (process.env.GROQ_API_KEY || process.env.GROQ_KEY || process.env.GROQ_APIKEY || '').trim();
+  const mistralKey = (process.env.MISTRAL_API_KEY || process.env.MISTRAL_KEY || process.env.MISTRAL_APIKEY || '').trim();
+
   if (req.query.diagnostic === '1' || req.query.details === 'true') {
     const diagnostic = {
       status: 'ok',
       providers: {
-        gemini: Boolean(process.env.GEMINI_API_KEY),
-        groq: Boolean(process.env.GROQ_API_KEY),
-        mistral: Boolean(process.env.MISTRAL_API_KEY)
+        gemini: Boolean(geminiKey),
+        groq: Boolean(groqKey),
+        mistral: Boolean(mistralKey)
       }
     };
 
-    if (req.query.test_provider === 'mistral' && process.env.MISTRAL_API_KEY) {
+    if (req.query.test_provider === 'mistral' && mistralKey) {
       try {
         const testModel = req.query.model || process.env.MISTRAL_MODEL || 'mistral-small-latest';
         const testRes = await fetch('https://api.mistral.ai/v1/chat/completions', {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
-            'Authorization': `Bearer ${process.env.MISTRAL_API_KEY}`
+            'Authorization': `Bearer ${mistralKey}`
           },
           body: JSON.stringify({
             model: testModel,
@@ -40,13 +44,13 @@ router.get('/health', async (req, res) => {
       }
     }
 
-    if (req.query.test_provider === 'groq' && process.env.GROQ_API_KEY) {
+    if (req.query.test_provider === 'groq' && groqKey) {
       try {
         const testRes = await fetch('https://api.groq.com/openai/v1/chat/completions', {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
-            'Authorization': `Bearer ${process.env.GROQ_API_KEY}`
+            'Authorization': `Bearer ${groqKey}`
           },
           body: JSON.stringify({
             model: process.env.GROQ_MODEL || 'llama-3.3-70b-versatile',
@@ -71,4 +75,3 @@ router.get('/health', async (req, res) => {
 });
 
 export default router;
-

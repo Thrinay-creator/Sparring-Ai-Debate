@@ -40,6 +40,13 @@ export function errorHandler(err, req, res, next) {
     });
   }
 
+  if (err?.code === 'ALL_PROVIDERS_UNAVAILABLE') {
+    return res.status(503).json({
+      code: 'ALL_PROVIDERS_UNAVAILABLE',
+      message: err.userMessage || 'The AI opponent service is temporarily experiencing high demand across all providers. Please retry in a few moments.'
+    });
+  }
+
   if (err?.code === 'GEMINI_API_ERROR') {
     return res.status(503).json({
       code: 'GEMINI_API_ERROR',

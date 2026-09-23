@@ -7,7 +7,7 @@ dotenv.config();
 let genAIClient = null;
 
 export function getGeminiClient() {
-  const apiKey = process.env.GEMINI_API_KEY;
+  const apiKey = (process.env.GEMINI_API_KEY || process.env.GEMINI_KEY || '').trim();
   if (!apiKey) {
     console.warn('[Gemini Service] GEMINI_API_KEY is not defined in environment.');
   }
@@ -47,7 +47,10 @@ export function validateAndNormalizeJson(rawText, zodSchema, providerName = 'AI 
   if (parsedJson && typeof parsedJson === 'object') {
     // Normalize fallacy: "none", "None", "null", "no fallacy", etc. -> null
     if (typeof parsedJson.fallacy === 'string') {
-      const norm = parsedJson.fallacy.trim().toLowerCase();
+      let norm = parsedJson.fallacy.trim().toLowerCase();
+      if (norm === 'straw man' || norm === 'straw-man' || norm === 'straw_man') {
+        norm = 'strawman';
+      }
       if (['none', 'null', 'no fallacy', 'n/a', 'no_fallacy', 'nil', '', 'undefined'].includes(norm)) {
         parsedJson.fallacy = null;
       } else if (ALLOWED_FALLACIES.includes(norm)) {
@@ -70,6 +73,23 @@ export function validateAndNormalizeJson(rawText, zodSchema, providerName = 'AI 
         if (!isNaN(num)) parsedJson[key] = num;
       }
     });
+
+    // Normalize fallaciesCommitted array elements if string notes or string fallacies
+    if (Array.isArray(parsedJson.fallaciesCommitted)) {
+      parsedJson.fallaciesCommitted = parsedJson.fallaciesCommitted
+        .map((item) => {
+          if (!item || typeof item !== 'object') return null;
+          let f = typeof item.fallacy === 'string' ? item.fallacy.trim().toLowerCase() : '';
+          if (f === 'straw man' || f === 'straw-man' || f === 'straw_man') {
+            f = 'strawman';
+          }
+          if (ALLOWED_FALLACIES.includes(f)) {
+            return { ...item, fallacy: f };
+          }
+          return null;
+        })
+        .filter(Boolean);
+    }
   }
 
   const zodResult = zodSchema.safeParse(parsedJson);
@@ -88,57 +108,92 @@ export function validateAndNormalizeJson(rawText, zodSchema, providerName = 'AI 
 }
 
 /**
- * Fallback Provider 1: Groq (llama-3.3-70b-versatile)
+ * Fallback Provider 1: Groq (llama-3.3-70b-versatile with llama-3.1-8b-instant fallback)
  */
 export async function callGroqProvider({ systemPrompt, userPrompt, zodSchema, temperature = 0.7 }) {
-  const apiKey = process.env.GROQ_API_KEY;
+  const apiKey = (process.env.GROQ_API_KEY || process.env.GROQ_KEY || process.env.GROQ_APIKEY || '').trim();
   if (!apiKey) return null;
 
-  const model = process.env.GROQ_MODEL || 'llama-3.3-70b-versatile';
-  console.log(`[Groq Provider] Initiating generation with model: ${model}`);
-
-  const res = await fetch('https://api.groq.com/openai/v1/chat/completions', {
-    method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-      'Authorization': `Bearer ${apiKey}`
-    },
-    body: JSON.stringify({
-      model,
-      messages: [
-        { role: 'system', content: `${systemPrompt}\n\nIMPORTANT: You must return strictly valid JSON conforming exactly to the requested schema. Do not include markdown preamble.` },
-        { role: 'user', content: userPrompt }
-      ],
-      response_format: { type: 'json_object' },
-      temperature
-    })
-  });
-
-  if (!res.ok) {
-    const errorBody = await res.text().catch(() => '');
-    throw new Error(`Groq API returned HTTP ${res.status}: ${errorBody}`);
+  const configuredModel = process.env.GROQ_MODEL || 'llama-3.3-70b-versatile';
+  const modelsToTry = [configuredModel];
+  if (!modelsToTry.includes('llama-3.1-8b-instant')) {
+    modelsToTry.push('llama-3.1-8b-instant');
   }
 
-  const data = await res.json();
-  const rawText = data.choices?.[0]?.message?.content;
-  if (!rawText) {
-    throw new Error('Groq returned empty completion content');
+  // Language enforcement prompt addition to ensure Groq never outputs English when Telugu/Hindi requested
+  let langGuidance = '';
+  if (systemPrompt.includes('Telugu') || systemPrompt.includes('తెలుగు')) {
+    langGuidance = '\n\nLANGUAGE ENFORCEMENT (CRITICAL): All text fields ("counter", "scoreReason", "strengths", "weaknesses", "suggestions", "note") MUST be written in fluent, natural Telugu script (తెలుగు). Schema property names and fallacy enum values must remain standard ASCII.';
+  } else if (systemPrompt.includes('Hindi') || systemPrompt.includes('हिन्दी')) {
+    langGuidance = '\n\nLANGUAGE ENFORCEMENT (CRITICAL): All text fields ("counter", "scoreReason", "strengths", "weaknesses", "suggestions", "note") MUST be written in fluent, natural Hindi (Devanagari script हिन्दी). Schema property names and fallacy enum values must remain standard ASCII.';
   }
 
-  return validateAndNormalizeJson(rawText, zodSchema, 'Groq');
+  let lastError = null;
+  for (const model of modelsToTry) {
+    try {
+      console.log(`[Groq Provider] Initiating generation with model: ${model}`);
+      const res = await fetch('https://api.groq.com/openai/v1/chat/completions', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${apiKey}`
+        },
+        body: JSON.stringify({
+          model,
+          messages: [
+            {
+              role: 'system',
+              content: `${systemPrompt}${langGuidance}\n\nIMPORTANT: You must return strictly valid JSON conforming exactly to the requested schema. Do not include markdown preamble, explanation, or backticks outside the JSON.`
+            },
+            { role: 'user', content: userPrompt }
+          ],
+          response_format: { type: 'json_object' },
+          temperature
+        })
+      });
+
+      if (!res.ok) {
+        const errorBody = await res.text().catch(() => '');
+        throw new Error(`Groq API (${model}) returned HTTP ${res.status}: ${errorBody}`);
+      }
+
+      const data = await res.json();
+      const rawText = data.choices?.[0]?.message?.content;
+      if (!rawText) {
+        throw new Error(`Groq (${model}) returned empty completion content`);
+      }
+
+      return validateAndNormalizeJson(rawText, zodSchema, `Groq (${model})`);
+    } catch (err) {
+      console.warn(`[Groq Provider] Model ${model} attempt failed:`, err.message);
+      lastError = err;
+    }
+  }
+
+  throw lastError || new Error('All Groq candidate models failed');
 }
 
 /**
- * Fallback Provider 2: Mistral AI (mistral-small-latest with open-mistral-7b fallback)
+ * Fallback Provider 2: Mistral AI (mistral-small-latest, open-mistral-7b, ministral-8b-latest)
  */
 export async function callMistralProvider({ systemPrompt, userPrompt, zodSchema, temperature = 0.7 }) {
-  const apiKey = process.env.MISTRAL_API_KEY;
+  const apiKey = (process.env.MISTRAL_API_KEY || process.env.MISTRAL_KEY || process.env.MISTRAL_APIKEY || '').trim();
   if (!apiKey) return null;
 
   const configuredModel = process.env.MISTRAL_MODEL || 'mistral-small-latest';
   const modelsToTry = [configuredModel];
   if (!modelsToTry.includes('open-mistral-7b')) {
     modelsToTry.push('open-mistral-7b');
+  }
+  if (!modelsToTry.includes('ministral-8b-latest')) {
+    modelsToTry.push('ministral-8b-latest');
+  }
+
+  let langGuidance = '';
+  if (systemPrompt.includes('Telugu') || systemPrompt.includes('తెలుగు')) {
+    langGuidance = '\n\nLANGUAGE ENFORCEMENT (CRITICAL): All text fields ("counter", "scoreReason", "strengths", "weaknesses", "suggestions", "note") MUST be written in fluent, natural Telugu script (తెలుగు). Schema property names and fallacy enum values must remain standard ASCII.';
+  } else if (systemPrompt.includes('Hindi') || systemPrompt.includes('हिन्दी')) {
+    langGuidance = '\n\nLANGUAGE ENFORCEMENT (CRITICAL): All text fields ("counter", "scoreReason", "strengths", "weaknesses", "suggestions", "note") MUST be written in fluent, natural Hindi (Devanagari script हिन्दी). Schema property names and fallacy enum values must remain standard ASCII.';
   }
 
   let lastError = null;
@@ -155,7 +210,10 @@ export async function callMistralProvider({ systemPrompt, userPrompt, zodSchema,
         body: JSON.stringify({
           model,
           messages: [
-            { role: 'system', content: `${systemPrompt}\n\nIMPORTANT: You must return strictly valid JSON conforming exactly to the requested schema. Do not include markdown preamble.` },
+            {
+              role: 'system',
+              content: `${systemPrompt}${langGuidance}\n\nIMPORTANT: You must return strictly valid JSON conforming exactly to the requested schema. Do not include markdown preamble, explanation, or backticks outside the JSON.`
+            },
             { role: 'user', content: userPrompt }
           ],
           response_format: { type: 'json_object' },
@@ -174,7 +232,7 @@ export async function callMistralProvider({ systemPrompt, userPrompt, zodSchema,
         throw new Error(`Mistral (${model}) returned empty completion content`);
       }
 
-      return validateAndNormalizeJson(rawText, zodSchema, 'Mistral');
+      return validateAndNormalizeJson(rawText, zodSchema, `Mistral (${model})`);
     } catch (err) {
       console.warn(`[Mistral Provider] Model ${model} attempt failed:`, err.message);
       lastError = err;
@@ -185,10 +243,10 @@ export async function callMistralProvider({ systemPrompt, userPrompt, zodSchema,
 }
 
 /**
- * Executes a structured content generation with Gemini (primary), with automatic failover
- * to Groq and Mistral AI if rate limits or service unavailability occur.
+ * Executes Gemini generation with safety checks and JSON validation.
+ * Fails fast on 429 quota exhaustion so failover to Groq happens immediately.
  */
-export async function generateStructuredContent({
+async function executeGeminiGeneration({
   systemPrompt,
   userPrompt,
   geminiSchema,
@@ -196,32 +254,6 @@ export async function generateStructuredContent({
   temperature = 0.7,
   maxOutputTokens = 1024
 }) {
-  const apiKey = process.env.GEMINI_API_KEY;
-  if (!apiKey) {
-    // If Gemini key is missing, attempt direct failover if secondary keys are present
-    if (process.env.GROQ_API_KEY) {
-      try {
-        console.log('[AI Gateway] No Gemini key found. Directing to Groq provider...');
-        return await callGroqProvider({ systemPrompt, userPrompt, zodSchema, temperature });
-      } catch (e) {
-        console.warn('[AI Gateway] Groq direct invocation failed:', e.message);
-      }
-    }
-    if (process.env.MISTRAL_API_KEY) {
-      try {
-        console.log('[AI Gateway] No Gemini key found. Directing to Mistral provider...');
-        return await callMistralProvider({ systemPrompt, userPrompt, zodSchema, temperature });
-      } catch (e) {
-        console.warn('[AI Gateway] Mistral direct invocation failed:', e.message);
-      }
-    }
-
-    const err = new Error('Gemini API key is not configured on the backend.');
-    err.code = 'CONFIG_ERROR';
-    err.userMessage = 'Backend AI configuration is missing. Please set GEMINI_API_KEY in backend/.env';
-    throw err;
-  }
-
   const ai = getGeminiClient();
   const contents = [
     {
@@ -263,7 +295,6 @@ export async function generateStructuredContent({
       throw err;
     }
 
-    // Extract text safely
     let rawText = response.text;
     if (!rawText && candidate?.content?.parts?.[0]?.text) {
       rawText = candidate.content.parts[0].text;
@@ -283,147 +314,178 @@ export async function generateStructuredContent({
     return validateAndNormalizeJson(rawText, zodSchema, 'Gemini');
   };
 
-  const primaryModel = getModelName();
-  const candidateModels = [primaryModel];
-  if (primaryModel !== 'gemini-3.5-flash') {
-    candidateModels.push('gemini-3.5-flash');
-  }
+  const modelToUse = getModelName();
 
-  const executeCallWithModel = async (modelToUse, callContents) => {
-    let attempts = 0;
-    const maxAttempts = 2;
-    while (attempts < maxAttempts) {
-      attempts++;
+  try {
+    console.log(`[Gemini Service] Runtime model: ${modelToUse}`);
+    console.log('[Gemini Service] generateContent started');
+    const response = await ai.models.generateContent({
+      model: modelToUse,
+      contents,
+      config
+    });
+    return extractAndValidate(response);
+  } catch (apiErr) {
+    console.error('[Gemini Service] Gemini error status:', apiErr?.status || 'N/A');
+    console.error('[Gemini Service] Gemini error message:', apiErr?.message || 'N/A');
+
+    // 429 Quota Exceeded: Fail immediately with GEMINI_QUOTA_ERROR to trigger Groq failover without delay
+    if (apiErr?.status === 429 || apiErr?.message?.includes('429') || apiErr?.message?.includes('RESOURCE_EXHAUSTED')) {
+      const quotaErr = new Error('Gemini quota limit exceeded');
+      quotaErr.code = 'GEMINI_QUOTA_ERROR';
+      quotaErr.status = 429;
+      quotaErr.userMessage = 'AI rate limit reached (Gemini 429). Please wait a moment before sending your next argument.';
+      throw quotaErr;
+    }
+
+    // Safety block: fail immediately
+    if (apiErr?.code === 'GEMINI_BLOCKED') {
+      throw apiErr;
+    }
+
+    // 503 High Demand or transient network: retry once
+    if (apiErr?.status === 503 || apiErr?.message?.includes('503') || apiErr?.message?.includes('UNAVAILABLE')) {
+      console.log(`[Gemini Service] 503 high demand encountered for ${modelToUse}. Retrying once after 1000ms...`);
+      await new Promise((r) => setTimeout(r, 1000));
       try {
-        console.log(`[Gemini Service] Runtime model: ${modelToUse}`);
-        console.log('[Gemini Service] generateContent started');
-        const response = await ai.models.generateContent({
+        const retryResponse = await ai.models.generateContent({
           model: modelToUse,
-          contents: callContents,
+          contents,
           config
         });
-        return response;
-      } catch (apiErr) {
-        console.error('[Gemini Service] Gemini error status:', apiErr?.status || 'N/A');
-        console.error('[Gemini Service] Gemini error code:', apiErr?.code || 'N/A');
-        console.error('[Gemini Service] Gemini error message:', apiErr?.message || 'N/A');
-        console.error(`[Gemini Service] Gemini API call (${modelToUse}) attempt ${attempts} failed:`, apiErr?.status || apiErr?.message);
-
-        // Quota exceeded: fail fast on this model
-        if (apiErr?.status === 429 || apiErr?.message?.includes('429') || apiErr?.message?.includes('RESOURCE_EXHAUSTED')) {
-          const quotaErr = new Error('Gemini quota limit exceeded');
-          quotaErr.code = 'GEMINI_QUOTA_ERROR';
-          quotaErr.userMessage = 'AI rate limit reached (Gemini 429). Please wait a moment before sending your next argument.';
-          throw quotaErr;
-        }
-
-        // Model high demand / unavailable (503): back off if attempts remaining
-        if (apiErr?.status === 503 || apiErr?.message?.includes('503') || apiErr?.message?.includes('UNAVAILABLE')) {
-          if (attempts < maxAttempts) {
-            console.log(`[Gemini Service] 503 high demand encountered for ${modelToUse}. Backing off 2000ms before attempt ${attempts + 1}...`);
-            await new Promise((r) => setTimeout(r, 2000));
-            continue;
-          }
-          const unavailableErr = new Error('Gemini model is currently experiencing high demand');
-          unavailableErr.code = 'GEMINI_API_ERROR';
-          unavailableErr.userMessage = 'The AI opponent service is temporarily unavailable (Gemini 503). Please retry in a few moments.';
-          throw unavailableErr;
-        }
-
-        // Generic network error: retry if attempts remaining
-        if (attempts < maxAttempts) {
-          await new Promise((r) => setTimeout(r, 1000));
-          continue;
-        }
-
-        const genericErr = new Error(`Gemini API Error: ${apiErr?.message || 'Unknown network error'}`);
-        genericErr.code = 'GEMINI_API_ERROR';
-        genericErr.userMessage = "Sparring couldn't reach the AI opponent. Check your connection and try again.";
-        throw genericErr;
-      }
-    }
-  };
-
-  let lastModelError = null;
-
-  for (let mIdx = 0; mIdx < candidateModels.length; mIdx++) {
-    const currentModel = candidateModels[mIdx];
-    try {
-      try {
-        const response = await executeCallWithModel(currentModel, contents);
-        return extractAndValidate(response);
-      } catch (firstErr) {
-        if (firstErr.code === 'GEMINI_QUOTA_ERROR' || firstErr.code === 'GEMINI_BLOCKED') {
-          throw firstErr;
-        }
-
-        console.warn(`[Gemini Service] First attempt failed with ${firstErr.code || 'error'}: ${firstErr.message}. Retrying once...`);
-        await new Promise((resolve) => setTimeout(resolve, 1000));
-
-        let retryContents = contents;
-        if (firstErr.code === 'GEMINI_SCHEMA_ERROR' || firstErr.code === 'GEMINI_PARSE_ERROR') {
-          retryContents = [
-            ...contents,
-            {
-              role: 'model',
-              parts: [{ text: JSON.stringify(firstErr.parsed || { error: 'Schema mismatch' }) }]
-            },
-            {
-              role: 'user',
-              parts: [{ text: 'Your previous response did not match the required JSON schema. Return strictly valid JSON conforming exactly to the schema properties and types.' }]
-            }
-          ];
-        }
-
-        const retryResponse = await executeCallWithModel(currentModel, retryContents);
         return extractAndValidate(retryResponse);
+      } catch (retryErr) {
+        throw retryErr;
       }
-    } catch (modelErr) {
-      lastModelError = modelErr;
-      if (modelErr.code === 'GEMINI_BLOCKED') {
-        throw modelErr;
-      }
-
-      if (mIdx < candidateModels.length - 1) {
-        console.warn(`[Gemini Service] Model ${currentModel} encountered ${modelErr.code}. Engaging fallback model ${candidateModels[mIdx + 1]}...`);
-        await new Promise((resolve) => setTimeout(resolve, 500));
-        continue;
-      }
-
-      // Gemini candidate models exhausted or quota reached.
-      // Engage secondary multi-provider fallbacks if keys are configured.
-
-      // Fallback 1: Groq
-      if (process.env.GROQ_API_KEY) {
-        try {
-          console.warn(`[AI Failover] Engaging Groq fallback after Gemini ${modelErr.code || 'error'}...`);
-          const groqResult = await callGroqProvider({ systemPrompt, userPrompt, zodSchema, temperature });
-          if (groqResult) {
-            console.log('[AI Failover] Successfully generated response using Groq fallback.');
-            return groqResult;
-          }
-        } catch (groqErr) {
-          console.error('[AI Failover] Groq fallback failed:', groqErr?.message);
-        }
-      }
-
-      // Fallback 2: Mistral AI
-      if (process.env.MISTRAL_API_KEY) {
-        try {
-          console.warn(`[AI Failover] Engaging Mistral AI fallback after Gemini ${modelErr.code || 'error'}...`);
-          const mistralResult = await callMistralProvider({ systemPrompt, userPrompt, zodSchema, temperature });
-          if (mistralResult) {
-            console.log('[AI Failover] Successfully generated response using Mistral AI fallback.');
-            return mistralResult;
-          }
-        } catch (mistralErr) {
-          console.error('[AI Failover] Mistral fallback failed:', mistralErr?.message);
-        }
-      }
-
-      throw modelErr;
     }
+
+    throw apiErr;
+  }
+}
+
+/**
+ * Universal structured content generation across all chamber routes (/api/debate-turn and /api/feedback).
+ * Enforces automatic, silent failover in strict order:
+ * 1. Google Gemini (Primary)
+ * 2. If Gemini 429 / Quota / Outage -> Groq (Secondary)
+ * 3. If Groq fails -> Mistral AI (Tertiary)
+ * 4. Only if ALL providers fail -> User-facing error
+ */
+export async function generateStructuredContent({
+  systemPrompt,
+  userPrompt,
+  geminiSchema,
+  zodSchema,
+  temperature = 0.7,
+  maxOutputTokens = 1024
+}) {
+  const geminiKey = (process.env.GEMINI_API_KEY || process.env.GEMINI_KEY || '').trim();
+  const groqKey = (process.env.GROQ_API_KEY || process.env.GROQ_KEY || process.env.GROQ_APIKEY || '').trim();
+  const mistralKey = (process.env.MISTRAL_API_KEY || process.env.MISTRAL_KEY || process.env.MISTRAL_APIKEY || '').trim();
+
+  let geminiError = null;
+  let groqError = null;
+  let mistralError = null;
+
+  // ========================================================
+  // PROVIDER 1: Google Gemini (Primary)
+  // ========================================================
+  if (geminiKey) {
+    try {
+      console.log('[AI Gateway] Attempting generation with primary provider: Google Gemini...');
+      const geminiResult = await executeGeminiGeneration({
+        systemPrompt,
+        userPrompt,
+        geminiSchema,
+        zodSchema,
+        temperature,
+        maxOutputTokens
+      });
+      if (geminiResult) {
+        return geminiResult;
+      }
+    } catch (err) {
+      // Content safety filter triggered by user input - don't failover
+      if (err.code === 'GEMINI_BLOCKED') {
+        throw err;
+      }
+
+      console.warn(`[AI Gateway] Gemini provider encountered [${err.code || 'ERROR'}]: ${err.message}. Engaging fallback sequence...`);
+      geminiError = err;
+    }
+  } else {
+    console.warn('[AI Gateway] GEMINI_API_KEY not configured. Engaging fallback sequence...');
   }
 
-  throw lastModelError;
+  // ========================================================
+  // PROVIDER 2: Groq (Secondary / Fast Failover)
+  // ========================================================
+  if (groqKey) {
+    try {
+      console.warn('[AI Gateway] Engaging Groq fallback provider...');
+      const groqResult = await callGroqProvider({
+        systemPrompt,
+        userPrompt,
+        zodSchema,
+        temperature
+      });
+      if (groqResult) {
+        console.log('[AI Gateway] Successfully generated response using Groq fallback.');
+        return groqResult;
+      }
+    } catch (err) {
+      console.warn('[AI Gateway] Groq fallback failed:', err.message);
+      groqError = err;
+    }
+  } else {
+    console.warn('[AI Gateway] GROQ_API_KEY not configured. Checking next fallback...');
+  }
+
+  // ========================================================
+  // PROVIDER 3: Mistral AI (Tertiary Failover)
+  // ========================================================
+  if (mistralKey) {
+    try {
+      console.warn('[AI Gateway] Engaging Mistral AI fallback provider...');
+      const mistralResult = await callMistralProvider({
+        systemPrompt,
+        userPrompt,
+        zodSchema,
+        temperature
+      });
+      if (mistralResult) {
+        console.log('[AI Gateway] Successfully generated response using Mistral AI fallback.');
+        return mistralResult;
+      }
+    } catch (err) {
+      console.warn('[AI Gateway] Mistral AI fallback failed:', err.message);
+      mistralError = err;
+    }
+  } else {
+    console.warn('[AI Gateway] MISTRAL_API_KEY not configured. No further fallbacks available.');
+  }
+
+  // ========================================================
+  // ALL PROVIDERS EXHAUSTED OR FAILED
+  // ========================================================
+  console.error('[AI Gateway] All AI providers exhausted. Failure summary:', {
+    gemini: geminiError?.message || (geminiKey ? 'Failed' : 'Not configured'),
+    groq: groqError?.message || (groqKey ? 'Failed' : 'Not configured'),
+    mistral: mistralError?.message || (mistralKey ? 'Failed' : 'Not configured')
+  });
+
+  const finalError = new Error(
+    geminiError?.code === 'GEMINI_QUOTA_ERROR'
+      ? 'The AI opponent service is currently experiencing high demand across all providers. Please retry in a moment.'
+      : (geminiError?.userMessage || 'All AI opponent providers are temporarily unavailable. Please retry in a few moments.')
+  );
+  finalError.code = 'ALL_PROVIDERS_UNAVAILABLE';
+  finalError.status = 503;
+  finalError.userMessage = 'The AI opponent service is temporarily experiencing high demand across all providers. Please retry in a few moments.';
+  finalError.details = {
+    gemini: geminiError?.code || 'UNAVAILABLE',
+    groq: groqError?.message || (groqKey ? 'FAILED' : 'NOT_CONFIGURED'),
+    mistral: mistralError?.message || (mistralKey ? 'FAILED' : 'NOT_CONFIGURED')
+  };
+  throw finalError;
 }
