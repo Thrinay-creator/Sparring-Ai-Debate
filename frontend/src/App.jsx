@@ -49,6 +49,7 @@ export default function App() {
     submitArgument,
     retryLastTurn,
     finishDebate,
+    cancelFinishing,
     resetToSetup,
     loadPastSession,
   } = useDebate({
@@ -196,7 +197,7 @@ export default function App() {
           <RunningPage
             session={session}
             onCancel={() => {
-              resetToSetup();
+              cancelFinishing();
               navigate('/debate');
             }}
           />

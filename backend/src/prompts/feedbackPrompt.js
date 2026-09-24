@@ -32,7 +32,36 @@ MANDATORY RULES:
    Allowed fallacies:
 ${ALLOWED_FALLACIES.map((f) => `   - "${f}"`).join('\n')}
    Only flag fallacies from this exact list. Include a concise "note" explaining where and how the user committed it.
-${languageRule}`;
+${languageRule}
+
+7. MANDATORY JSON OUTPUT STRUCTURE:
+You MUST respond with a strictly valid JSON object conforming to this exact structure:
+{
+  "overallScore": <integer 1-100>,
+  "logicScore": <integer 1-100>,
+  "evidenceScore": <integer 1-100>,
+  "persuasivenessScore": <integer 1-100>,
+  "strengths": [
+    "<string: specific user strength 1>",
+    "<string: specific user strength 2>"
+  ],
+  "weaknesses": [
+    "<string: specific user weakness 1>",
+    "<string: specific user weakness 2>"
+  ],
+  "fallaciesCommitted": [
+    {
+      "fallacy": "<allowed fallacy name from list above>",
+      "note": "<string: explanation of where and how it was committed>"
+    }
+  ],
+  "suggestions": [
+    "<string: concrete actionable suggestion 1>",
+    "<string: concrete actionable suggestion 2>"
+  ]
+}
+If no fallacies were committed, "fallaciesCommitted" MUST be an empty array [].
+Do NOT include any conversational preamble or markdown text outside the JSON object.`;
 
   const userPrompt = `TOPIC: "${topic}"
 USER DEFENDED STANCE: "${userStance}"
@@ -40,7 +69,7 @@ USER DEFENDED STANCE: "${userStance}"
 COMPLETE DEBATE TRANSCRIPT:
 ${serializedTranscript}
 
-Analyze the user's performance and output the complete JSON report strictly conforming to the response schema.`;
+Analyze the user's performance and output the complete JSON report strictly with "overallScore", "logicScore", "evidenceScore", "persuasivenessScore", "strengths", "weaknesses", "fallaciesCommitted", and "suggestions".`;
 
   return { systemPrompt, userPrompt };
 }

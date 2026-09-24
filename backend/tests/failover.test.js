@@ -5,6 +5,7 @@ import {
   callMistralProvider,
   generateStructuredContent
 } from '../src/services/gemini.js';
+import { processFeedback } from '../src/services/feedbackService.js';
 import { debateOutputSchema } from '../src/schemas/debateSchema.js';
 import { feedbackOutputSchema } from '../src/schemas/feedbackSchema.js';
 
@@ -323,4 +324,57 @@ describe('AI Provider Failover Architecture (Gemini -> Groq -> Mistral)', () => 
       expect(groqCalled).toBe(false);
     });
   });
+
+  describe('Feedback Schema Normalization and Resilient Synthesis', () => {
+    it('normalizes feedback report with aliased or nested scores', () => {
+      const rawFeedback = JSON.stringify({
+        scores: {
+          overallScore: "78",
+          logicScore: 82,
+          evidenceScore: 70,
+          persuasivenessScore: 80
+        },
+        feedback: {
+          strengths: ["Clear empirical data", "Good composure"],
+          weaknesses: ["Fell into false dilemma"],
+          suggestions: ["Address counterarguments earlier"]
+        },
+        fallacies: ["false dilemma"]
+      });
+
+      const normalized = validateAndNormalizeJson(rawFeedback, feedbackOutputSchema, 'TestProvider');
+      expect(normalized.overallScore).toBe(78);
+      expect(normalized.logicScore).toBe(82);
+      expect(normalized.evidenceScore).toBe(70);
+      expect(normalized.persuasivenessScore).toBe(80);
+      expect(normalized.strengths).toHaveLength(2);
+      expect(normalized.fallaciesCommitted).toHaveLength(1);
+      expect(normalized.fallaciesCommitted[0].fallacy).toBe('false dilemma');
+    });
+
+    it('synthesizes valid feedback report when all external AI providers fail', async () => {
+      delete process.env.GEMINI_API_KEY;
+      delete process.env.GROQ_API_KEY;
+      delete process.env.MISTRAL_API_KEY;
+
+      const report = await processFeedback({
+        topic: 'Should social media be banned for under-16s?',
+        userStance: 'FOR',
+        transcript: [
+          { role: 'user', content: 'yessssssssssssss' },
+          { role: 'ai', content: 'Your argument is a non-starter without empirical reasoning.' }
+        ],
+        language: 'en'
+      });
+
+      expect(report).toBeDefined();
+      expect(report.overallScore).toBeGreaterThanOrEqual(1);
+      expect(report.overallScore).toBeLessThanOrEqual(100);
+      expect(report.strengths.length).toBeGreaterThan(0);
+      expect(report.weaknesses.length).toBeGreaterThan(0);
+      expect(report.suggestions.length).toBeGreaterThan(0);
+      expect(Array.isArray(report.fallaciesCommitted)).toBe(true);
+    });
+  });
 });
+

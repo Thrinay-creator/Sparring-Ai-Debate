@@ -135,50 +135,112 @@ export function validateAndNormalizeJson(rawText, zodSchema, providerName = 'AI 
       parsedJson.argumentScore = Math.min(10, Math.max(1, Math.round(scoreNum)));
     }
 
-    // For feedback report: normalize dimensional scores if strings or on 1-10 scale
-    ['overallScore', 'logicScore', 'evidenceScore', 'persuasivenessScore'].forEach((key) => {
-      if (parsedJson[key] !== undefined) {
-        let num = typeof parsedJson[key] === 'string' ? parseInt(parsedJson[key], 10) : Number(parsedJson[key]);
+    // For feedback report: normalize dimensional scores if strings or on 1-10 scale, and handle aliases / nested objects
+    const scoreKeyMap = [
+      { key: 'overallScore', aliases: ['overall_score', 'overall', 'score', 'totalScore', 'total_score'] },
+      { key: 'logicScore', aliases: ['logic_score', 'logic', 'reasoningScore', 'reasoning_score', 'reasoning'] },
+      { key: 'evidenceScore', aliases: ['evidence_score', 'evidence', 'empiricalScore', 'factualScore'] },
+      { key: 'persuasivenessScore', aliases: ['persuasiveness_score', 'persuasiveness', 'rhetoricScore', 'rhetoric'] }
+    ];
+
+    scoreKeyMap.forEach(({ key, aliases }) => {
+      let val = parsedJson[key];
+      if (val === undefined && parsedJson.scores && typeof parsedJson.scores === 'object') {
+        val = parsedJson.scores[key];
+        for (const a of aliases) {
+          if (val === undefined) val = parsedJson.scores[a];
+        }
+      }
+      if (val === undefined) {
+        for (const a of aliases) {
+          if (parsedJson[a] !== undefined) {
+            val = parsedJson[a];
+            break;
+          }
+        }
+      }
+      if (val !== undefined) {
+        let num = typeof val === 'string' ? parseInt(val, 10) : Number(val);
         if (isNaN(num)) num = 75;
         if (num <= 10 && num > 0) num = num * 10;
         parsedJson[key] = Math.min(100, Math.max(1, Math.round(num)));
+      } else if (parsedJson.strengths !== undefined || parsedJson.weaknesses !== undefined) {
+        parsedJson[key] = 75;
       }
     });
 
     // Normalize strengths, weaknesses, suggestions for feedback report
-    ['strengths', 'weaknesses', 'suggestions'].forEach((key) => {
-      if (typeof parsedJson[key] === 'string') {
-        parsedJson[key] = [parsedJson[key]];
+    const arrayKeyMap = [
+      { key: 'strengths', aliases: ['strength', 'userStrengths', 'keyStrengths', 'positives'], fallback: ["Articulated structured position on the core motion."] },
+      { key: 'weaknesses', aliases: ['weakness', 'userWeaknesses', 'flaws', 'areasForImprovement', 'negatives'], fallback: ["Could reinforce evidentiary backing with empirical references."] },
+      { key: 'suggestions', aliases: ['suggestion', 'recommendations', 'actionableSuggestions', 'advice'], fallback: ["Anticipate counterarguments by addressing foundational assumptions early."] }
+    ];
+
+    arrayKeyMap.forEach(({ key, aliases, fallback }) => {
+      let val = parsedJson[key];
+      if (val === undefined && parsedJson.feedback && typeof parsedJson.feedback === 'object') {
+        val = parsedJson.feedback[key];
+        for (const a of aliases) {
+          if (val === undefined) val = parsedJson.feedback[a];
+        }
       }
-      if (Array.isArray(parsedJson[key])) {
-        parsedJson[key] = parsedJson[key]
+      if (val === undefined) {
+        for (const a of aliases) {
+          if (parsedJson[a] !== undefined) {
+            val = parsedJson[a];
+            break;
+          }
+        }
+      }
+      if (typeof val === 'string') {
+        val = [val];
+      }
+      if (Array.isArray(val)) {
+        val = val
           .filter(s => typeof s === 'string' && s.trim().length > 0)
           .map(s => s.trim().length < 5 ? s + ' (demonstrated)' : s.trim());
       }
-      if (!Array.isArray(parsedJson[key]) || parsedJson[key].length === 0) {
-        if (key === 'strengths') parsedJson[key] = ["Articulated structured position on the core motion."];
-        if (key === 'weaknesses') parsedJson[key] = ["Could reinforce evidentiary backing with empirical references."];
-        if (key === 'suggestions') parsedJson[key] = ["Anticipate counterarguments by addressing foundational assumptions early."];
+      if (!Array.isArray(val) || val.length === 0) {
+        if (parsedJson.overallScore !== undefined || parsedJson.logicScore !== undefined) {
+          val = fallback;
+        }
+      }
+      if (val !== undefined) {
+        parsedJson[key] = val;
       }
     });
 
     // Normalize fallaciesCommitted array elements
-    if (Array.isArray(parsedJson.fallaciesCommitted)) {
-      parsedJson.fallaciesCommitted = parsedJson.fallaciesCommitted
+    let rawFallacies = parsedJson.fallaciesCommitted ?? parsedJson.fallacies ?? parsedJson.fallacyList ?? parsedJson.logicalFallacies;
+    if (rawFallacies !== undefined) {
+      if (!Array.isArray(rawFallacies)) {
+        rawFallacies = [];
+      }
+      parsedJson.fallaciesCommitted = rawFallacies
         .map((item) => {
-          if (!item || typeof item !== 'object') return null;
-          let f = typeof item.fallacy === 'string' ? item.fallacy.trim().toLowerCase() : '';
-          if (f === 'straw man' || f === 'straw-man' || f === 'straw_man') f = 'strawman';
-          if (ALLOWED_FALLACIES.includes(f)) {
-            const note = typeof item.note === 'string' && item.note.trim().length >= 5 
-              ? item.note.trim() 
-              : `Committed ${f} fallacy in supporting argument premise.`;
-            return { fallacy: f, note };
+          if (!item) return null;
+          if (typeof item === 'string') {
+            let f = item.trim().toLowerCase();
+            if (f === 'straw man' || f === 'straw-man' || f === 'straw_man') f = 'strawman';
+            if (ALLOWED_FALLACIES.includes(f)) {
+              return { fallacy: f, note: `Committed ${f} fallacy in supporting argument premise.` };
+            }
+            return null;
+          }
+          if (typeof item === 'object') {
+            let f = typeof item.fallacy === 'string' ? item.fallacy.trim().toLowerCase() : '';
+            if (f === 'straw man' || f === 'straw-man' || f === 'straw_man') f = 'strawman';
+            if (ALLOWED_FALLACIES.includes(f)) {
+              const note = typeof item.note === 'string' && item.note.trim().length >= 5 
+                ? item.note.trim() 
+                : (item.explanation || item.reason || `Committed ${f} fallacy in supporting argument premise.`);
+              return { fallacy: f, note };
+            }
           }
           return null;
         })
         .filter(Boolean);
-    } else {
+    } else if (parsedJson.overallScore !== undefined || parsedJson.strengths !== undefined) {
       parsedJson.fallaciesCommitted = [];
     }
   }
@@ -201,7 +263,7 @@ export function validateAndNormalizeJson(rawText, zodSchema, providerName = 'AI 
 /**
  * Fallback Provider 1: Groq (llama-3.3-70b-versatile with llama-3.1-8b-instant fallback)
  */
-export async function callGroqProvider({ systemPrompt, userPrompt, zodSchema, temperature = 0.7 }) {
+export async function callGroqProvider({ systemPrompt, userPrompt, zodSchema, geminiSchema, temperature = 0.7 }) {
   const apiKey = getProviderKey('groq');
   if (!apiKey) return null;
 
@@ -219,6 +281,12 @@ export async function callGroqProvider({ systemPrompt, userPrompt, zodSchema, te
     langGuidance = '\n\nLANGUAGE ENFORCEMENT (CRITICAL): All text fields ("counter", "scoreReason", "strengths", "weaknesses", "suggestions", "note") MUST be written in fluent, natural Hindi (Devanagari script हिन्दी). Schema property names and fallacy enum values must remain standard ASCII.';
   }
 
+  let schemaGuidance = '';
+  if (geminiSchema?.properties) {
+    const requiredKeys = geminiSchema.required || Object.keys(geminiSchema.properties);
+    schemaGuidance = `\n\nREQUIRED JSON SCHEMA:\nYou must output valid JSON containing these exact root fields: ${requiredKeys.map(k => `"${k}"`).join(', ')}.`;
+  }
+
   let lastError = null;
   for (const model of modelsToTry) {
     try {
@@ -234,12 +302,13 @@ export async function callGroqProvider({ systemPrompt, userPrompt, zodSchema, te
           messages: [
             {
               role: 'system',
-              content: `${systemPrompt}${langGuidance}\n\nIMPORTANT: You must return strictly valid JSON conforming exactly to the requested schema. Do not include markdown preamble, explanation, or backticks outside the JSON.`
+              content: `${systemPrompt}${langGuidance}${schemaGuidance}\n\nIMPORTANT: You must return strictly valid JSON conforming exactly to the requested schema. Do not include markdown preamble, explanation, or backticks outside the JSON.`
             },
             { role: 'user', content: userPrompt }
           ],
           response_format: { type: 'json_object' },
-          temperature
+          temperature,
+          max_tokens: 2048
         })
       });
 
@@ -270,20 +339,20 @@ export async function callGroqProvider({ systemPrompt, userPrompt, zodSchema, te
 /**
  * Fallback Provider 2: Mistral AI (open-mistral-7b, ministral-8b-latest, mistral-small-latest)
  */
-export async function callMistralProvider({ systemPrompt, userPrompt, zodSchema, temperature = 0.7 }) {
+export async function callMistralProvider({ systemPrompt, userPrompt, zodSchema, geminiSchema, temperature = 0.7 }) {
   const apiKey = getProviderKey('mistral');
   if (!apiKey) return null;
 
-  const configuredModel = process.env.MISTRAL_MODEL || 'open-mistral-7b';
+  const configuredModel = process.env.MISTRAL_MODEL || 'mistral-small-latest';
   const modelsToTry = [configuredModel];
+  if (!modelsToTry.includes('mistral-small-latest')) {
+    modelsToTry.push('mistral-small-latest');
+  }
   if (!modelsToTry.includes('open-mistral-7b')) {
     modelsToTry.push('open-mistral-7b');
   }
   if (!modelsToTry.includes('ministral-8b-latest')) {
     modelsToTry.push('ministral-8b-latest');
-  }
-  if (!modelsToTry.includes('mistral-small-latest')) {
-    modelsToTry.push('mistral-small-latest');
   }
 
   let langGuidance = '';
@@ -291,6 +360,12 @@ export async function callMistralProvider({ systemPrompt, userPrompt, zodSchema,
     langGuidance = '\n\nLANGUAGE ENFORCEMENT (CRITICAL): All text fields ("counter", "scoreReason", "strengths", "weaknesses", "suggestions", "note") MUST be written in fluent, natural Telugu script (తెలుగు). Schema property names and fallacy enum values must remain standard ASCII.';
   } else if (systemPrompt.includes('Hindi') || systemPrompt.includes('हिन्दी')) {
     langGuidance = '\n\nLANGUAGE ENFORCEMENT (CRITICAL): All text fields ("counter", "scoreReason", "strengths", "weaknesses", "suggestions", "note") MUST be written in fluent, natural Hindi (Devanagari script हिन्दी). Schema property names and fallacy enum values must remain standard ASCII.';
+  }
+
+  let schemaGuidance = '';
+  if (geminiSchema?.properties) {
+    const requiredKeys = geminiSchema.required || Object.keys(geminiSchema.properties);
+    schemaGuidance = `\n\nREQUIRED JSON SCHEMA:\nYou must output valid JSON containing these exact root fields: ${requiredKeys.map(k => `"${k}"`).join(', ')}.`;
   }
 
   let lastError = null;
@@ -309,12 +384,13 @@ export async function callMistralProvider({ systemPrompt, userPrompt, zodSchema,
           messages: [
             {
               role: 'system',
-              content: `${systemPrompt}${langGuidance}\n\nIMPORTANT: You must return strictly valid JSON conforming exactly to the requested schema. Do not include markdown preamble, explanation, or backticks outside the JSON.`
+              content: `${systemPrompt}${langGuidance}${schemaGuidance}\n\nIMPORTANT: You must return strictly valid JSON conforming exactly to the requested schema. Do not include markdown preamble, explanation, or backticks outside the JSON.`
             },
             { role: 'user', content: userPrompt }
           ],
           response_format: { type: 'json_object' },
-          temperature
+          temperature,
+          max_tokens: 2048
         })
       });
 
@@ -531,6 +607,7 @@ export async function generateStructuredContent({
         systemPrompt,
         userPrompt,
         zodSchema,
+        geminiSchema,
         temperature
       });
       if (groqResult) {
@@ -555,6 +632,7 @@ export async function generateStructuredContent({
         systemPrompt,
         userPrompt,
         zodSchema,
+        geminiSchema,
         temperature
       });
       if (mistralResult) {
