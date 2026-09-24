@@ -8,7 +8,12 @@ import ForgotPasswordPage from './pages/ForgotPasswordPage';
 import ResetPasswordPage from './pages/ResetPasswordPage';
 import HistoryPage from './pages/HistoryPage';
 import LandingPage from './pages/LandingPage';
+import LoadingPage from './pages/LoadingPage';
+import RunningPage from './pages/RunningPage';
+import NotFoundPage from './pages/NotFoundPage';
+import ErrorPage from './pages/ErrorPage';
 import SettingsModal from './components/common/SettingsModal';
+import ErrorBoundary from './components/common/ErrorBoundary';
 import { useDebate } from './hooks/useDebate';
 import { useSpeech } from './hooks/useSpeech';
 import { useTheme } from './hooks/useTheme';
@@ -55,8 +60,10 @@ export default function App() {
   });
 
   const AUTH_ROUTES = ['/login', '/signup', '/forgot-password', '/reset-password'];
-  const KNOWN_ROUTES = ['/', '/debate', '/history', ...AUTH_ROUTES];
-  const isLandingRoute = currentPath === '/' || !KNOWN_ROUTES.includes(currentPath);
+  const SYSTEM_ROUTES = ['/loading', '/running', '/error', '/404'];
+  const KNOWN_ROUTES = ['/', '/debate', '/history', ...AUTH_ROUTES, ...SYSTEM_ROUTES];
+  const isLandingRoute = currentPath === '/';
+  const isNotFoundRoute = !KNOWN_ROUTES.includes(currentPath) || currentPath === '/404';
 
   // Guard routes: Protect routes based on initialized authentication status
   useEffect(() => {
@@ -92,14 +99,7 @@ export default function App() {
 
   // Prevent flash while verifying auth status
   if (authLoading) {
-    return (
-      <div className="min-h-screen bg-chamber-bg text-chamber-text font-sans antialiased flex items-center justify-center">
-        <div className="flex flex-col items-center gap-3">
-          <div className="w-8 h-8 border-2 border-chamber-amber border-t-transparent rounded-full animate-spin" />
-          <span className="font-serif text-lg font-bold text-chamber-amber tracking-wider">SPARRING</span>
-        </div>
-      </div>
-    );
+    return <LoadingPage />;
   }
 
   const handleAuthSuccess = () => {
@@ -130,119 +130,156 @@ export default function App() {
     theme.setTheme(theme.resolvedTheme === 'dark' ? 'light' : 'dark');
   };
 
-  const isDebatingActive = (stage === 'DEBATING' || stage === 'WAITING_FOR_AI' || stage === 'FINISHING');
+  const isDebatingActive = (stage === 'DEBATING' || stage === 'WAITING_FOR_AI');
+  const isFinishingActive = stage === 'FINISHING';
   const isSummaryActive = stage === 'SUMMARY';
 
   return (
-    <div className="min-h-screen bg-chamber-bg text-chamber-text font-sans antialiased transition-colors duration-200">
-      {/* Route: /login */}
-      {currentPath === '/login' && (
-        <LoginPage
-          onNavigate={navigate}
-          onSuccess={handleAuthSuccess}
-        />
-      )}
+    <ErrorBoundary>
+      <div className="min-h-screen bg-chamber-bg text-chamber-text font-sans antialiased transition-colors duration-200">
+        {/* Route: /login */}
+        {currentPath === '/login' && (
+          <LoginPage
+            onNavigate={navigate}
+            onSuccess={handleAuthSuccess}
+          />
+        )}
 
-      {/* Route: /signup */}
-      {currentPath === '/signup' && (
-        <SignupPage
-          onNavigate={navigate}
-          onSuccess={handleAuthSuccess}
-        />
-      )}
+        {/* Route: /signup */}
+        {currentPath === '/signup' && (
+          <SignupPage
+            onNavigate={navigate}
+            onSuccess={handleAuthSuccess}
+          />
+        )}
 
-      {/* Route: /forgot-password */}
-      {currentPath === '/forgot-password' && (
-        <ForgotPasswordPage
-          onNavigate={navigate}
-        />
-      )}
+        {/* Route: /forgot-password */}
+        {currentPath === '/forgot-password' && (
+          <ForgotPasswordPage
+            onNavigate={navigate}
+          />
+        )}
 
-      {/* Route: /reset-password */}
-      {currentPath === '/reset-password' && (
-        <ResetPasswordPage
-          onNavigate={navigate}
-        />
-      )}
+        {/* Route: /reset-password */}
+        {currentPath === '/reset-password' && (
+          <ResetPasswordPage
+            onNavigate={navigate}
+          />
+        )}
 
-      {/* Route: /history */}
-      {currentPath === '/history' && (
-        <HistoryPage
-          onNavigate={navigate}
-          onOpenSettings={() => setIsSettingsOpen(true)}
-        />
-      )}
+        {/* Route: /history */}
+        {currentPath === '/history' && (
+          <HistoryPage
+            onNavigate={navigate}
+            onOpenSettings={() => setIsSettingsOpen(true)}
+          />
+        )}
 
-      {/* Active Debate Session View (Only when currentPath is /debate) */}
-      {currentPath === '/debate' && isDebatingActive && (
-        <DebatePage
-          session={session}
-          stage={stage}
-          error={error}
-          lastPendingArgument={lastPendingArgument}
-          onSubmitArgument={submitArgument}
-          onRetryTurn={retryLastTurn}
-          onFinishDebate={finishDebate}
-          onOpenSettings={() => setIsSettingsOpen(true)}
-          onNavigateHome={() => {
-            resetToSetup();
-            navigate('/');
-          }}
-          onOpenAuth={() => navigate('/login')}
-          speech={speech}
-        />
-      )}
+        {/* System Diagnostic Route: /loading */}
+        {currentPath === '/loading' && (
+          <LoadingPage />
+        )}
 
-      {/* Debate Summary View (Only when currentPath is /debate) */}
-      {currentPath === '/debate' && isSummaryActive && (
-        <SummaryPage
-          session={session}
-          onStartNewDebate={() => {
-            resetToSetup();
-            navigate('/debate');
-          }}
-          onOpenSettings={() => setIsSettingsOpen(true)}
-          onNavigate={navigate}
-          saveError={saveError}
-        />
-      )}
+        {/* System Diagnostic Route: /error */}
+        {currentPath === '/error' && (
+          <ErrorPage
+            onNavigateHome={() => navigate('/')}
+            onResetSession={() => {
+              resetToSetup();
+              navigate('/');
+            }}
+          />
+        )}
 
-      {/* Route: /debate (Setup Arena) */}
-      {currentPath === '/debate' && !isDebatingActive && !isSummaryActive && (
-        <SetupPage
-          onStartDebate={startDebate}
-          pastSessions={pastSessions}
-          onSelectSession={loadPastSession}
-          onOpenSettings={() => setIsSettingsOpen(true)}
-          onOpenAuth={() => navigate('/login')}
-          onNavigate={navigate}
-          initialTopic={initialTopic}
-        />
-      )}
+        {/* Adjudication Running Screen (During debate finalization or explicit /running route) */}
+        {((currentPath === '/debate' && isFinishingActive) || currentPath === '/running') && (
+          <RunningPage
+            session={session}
+            onCancel={() => {
+              resetToSetup();
+              navigate('/debate');
+            }}
+          />
+        )}
 
-      {/* Route: / (Default MotionSites-Inspired Landing Page or Fallback) */}
-      {isLandingRoute && !isDebatingActive && !isSummaryActive && (
-        <LandingPage
-          onStartDebating={() => handleLaunchDebate()}
-          onStartDebateWithTopic={(topic) => handleLaunchDebate(topic)}
-          onNavigate={navigate}
-          theme={theme.resolvedTheme}
-          onToggleTheme={handleToggleTheme}
-          user={user}
-          isAuthenticated={isAuthenticated}
-          speech={speech}
-        />
-      )}
+        {/* Active Debate Session View (Only when currentPath is /debate) */}
+        {currentPath === '/debate' && isDebatingActive && (
+          <DebatePage
+            session={session}
+            stage={stage}
+            error={error}
+            lastPendingArgument={lastPendingArgument}
+            onSubmitArgument={submitArgument}
+            onRetryTurn={retryLastTurn}
+            onFinishDebate={finishDebate}
+            onOpenSettings={() => setIsSettingsOpen(true)}
+            onNavigateHome={() => {
+              resetToSetup();
+              navigate('/');
+            }}
+            onOpenAuth={() => navigate('/login')}
+            speech={speech}
+          />
+        )}
 
-      {/* Preferences / Theme Settings Modal */}
-      <SettingsModal
-        isOpen={isSettingsOpen}
-        onClose={() => setIsSettingsOpen(false)}
-        theme={theme.theme}
-        onSelectTheme={theme.setTheme}
-        voiceSpeed={speech.voiceSpeed}
-        onSelectVoiceSpeed={speech.setVoiceSpeed}
-      />
-    </div>
+        {/* Debate Summary View (Only when currentPath is /debate) */}
+        {currentPath === '/debate' && isSummaryActive && (
+          <SummaryPage
+            session={session}
+            onStartNewDebate={() => {
+              resetToSetup();
+              navigate('/debate');
+            }}
+            onOpenSettings={() => setIsSettingsOpen(true)}
+            onNavigate={navigate}
+            saveError={saveError}
+          />
+        )}
+
+        {/* Route: /debate (Setup Arena) */}
+        {currentPath === '/debate' && !isDebatingActive && !isFinishingActive && !isSummaryActive && (
+          <SetupPage
+            onStartDebate={startDebate}
+            pastSessions={pastSessions}
+            onSelectSession={loadPastSession}
+            onOpenSettings={() => setIsSettingsOpen(true)}
+            onOpenAuth={() => navigate('/login')}
+            onNavigate={navigate}
+            initialTopic={initialTopic}
+          />
+        )}
+
+        {/* Route: / (Default MotionSites-Inspired Landing Page) */}
+        {isLandingRoute && !isDebatingActive && !isFinishingActive && !isSummaryActive && (
+          <LandingPage
+            onStartDebating={() => handleLaunchDebate()}
+            onStartDebateWithTopic={(topic) => handleLaunchDebate(topic)}
+            onNavigate={navigate}
+            theme={theme.resolvedTheme}
+            onToggleTheme={handleToggleTheme}
+            user={user}
+            isAuthenticated={isAuthenticated}
+            speech={speech}
+          />
+        )}
+
+        {/* Route: 404 / Premise Not Found */}
+        {isNotFoundRoute && !isDebatingActive && !isFinishingActive && !isSummaryActive && (
+          <NotFoundPage
+            onNavigate={navigate}
+          />
+        )}
+
+        {/* Preferences / Theme Settings Modal */}
+        <SettingsModal
+          isOpen={isSettingsOpen}
+          onClose={() => setIsSettingsOpen(false)}
+          theme={theme.theme}
+          onSelectTheme={theme.setTheme}
+          voiceSpeed={speech.voiceSpeed}
+          onSelectVoiceSpeed={speech.setVoiceSpeed}
+        />
+      </div>
+    </ErrorBoundary>
   );
 }

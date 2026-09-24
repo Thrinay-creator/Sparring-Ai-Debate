@@ -394,5 +394,53 @@ export default {
       languages: "Languages",
       allRightsReserved: "All rights reserved. Adversarial AI Debate & Cognitive Arena."
     }
+  },
+
+  // Loading Screen
+  loading: {
+    badge: "CHAMBER INITIALIZATION",
+    title: "Entering the Chamber...",
+    subtitle: "Calibrating the adversarial dialectic engine and loading debate telemetry.",
+    tip1: "AI opponents evaluate deductive rigor, empirical grounding, and fallacy resistance.",
+    tip2: "Support for English, Telugu, and Hindi with native speech synthesis.",
+    tip3: "Select Ruthless Lawyer difficulty to test bulletproof rhetorical defense."
+  },
+
+  // Running / Adjudication Screen
+  running: {
+    badge: "ADJUDICATION IN PROGRESS",
+    title: "Adjudicating Your Debate...",
+    subtitle: "The cognitive audit engine is dissecting your arguments across 5 dimensions and auditing fallacies.",
+    step1: "Transcribing dialectic exchange & structuring turns",
+    step2: "Scanning premises for cognitive and logical fallacies",
+    step3: "Scoring empirical evidence, consistency & rebuttal precision",
+    step4: "Synthesizing final forensic performance report",
+    motion: "Motion Under Review:",
+    completedTurns: "Rounds Completed: {count}",
+    pleaseWait: "Please wait while your performance report is compiled...",
+    cancelDebate: "Cancel and return to setup"
+  },
+
+  // 404 Not Found Page
+  notFound: {
+    badge: "404 / PREMISE NOT FOUND",
+    title: "Lost in the Dialectic",
+    subtitle: "The argument path or debate chamber you are looking for does not exist or has already concluded.",
+    returnHome: "Return to Arena Home",
+    startDebate: "Launch New Debate",
+    viewHistory: "View Debate History"
+  },
+
+  // Error Page / Boundary
+  errorPage: {
+    badge: "500 / CHAMBER DISRUPTION",
+    title: "Chamber Disruption Detected",
+    subtitle: "The debate engine encountered an unexpected runtime anomaly. Your local session state has been preserved.",
+    reloadChamber: "Reload Chamber",
+    returnHome: "Return to Home",
+    resetSession: "Reset Session",
+    diagnosticDetails: "Technical Diagnostics",
+    copyError: "Copy Diagnostic Log",
+    copied: "Copied to Clipboard"
   }
 };
