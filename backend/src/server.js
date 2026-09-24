@@ -4,6 +4,7 @@ import dotenv from 'dotenv';
 import healthRouter from './routes/health.js';
 import debateRouter from './routes/debate.js';
 import feedbackRouter from './routes/feedback.js';
+import ttsRouter from './routes/tts.js';
 import { apiRateLimiter } from './middleware/rateLimiter.js';
 import { errorHandler } from './middleware/errorHandler.js';
 
@@ -43,6 +44,7 @@ app.use('/api', apiRateLimiter);
 app.use('/api', healthRouter);
 app.use('/api', debateRouter);
 app.use('/api', feedbackRouter);
+app.use('/api', ttsRouter);
 
 // Global Error Handler
 app.use(errorHandler);

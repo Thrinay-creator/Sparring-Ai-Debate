@@ -11,6 +11,7 @@ export function useSpeech({ language = 'en', t } = {}) {
 
   const recognitionRef = useRef(null);
   const currentUtteranceRef = useRef(null);
+  const currentAudioRef = useRef(null);
 
   const recognitionSupported = typeof window !== 'undefined' && 
     !!(window.SpeechRecognition || window.webkitSpeechRecognition);
@@ -61,6 +62,14 @@ export function useSpeech({ language = 'en', t } = {}) {
       setVoiceState('IDLE');
     }
 
+    if (currentAudioRef.current) {
+      try {
+        currentAudioRef.current.pause();
+        currentAudioRef.current.currentTime = 0;
+      } catch {}
+      currentAudioRef.current = null;
+    }
+
     if (synthesisSupported && window.speechSynthesis) {
       window.speechSynthesis.cancel();
     }
@@ -72,6 +81,12 @@ export function useSpeech({ language = 'en', t } = {}) {
       if (recognitionRef.current) {
         try {
           recognitionRef.current.abort();
+        } catch {}
+      }
+      if (currentAudioRef.current) {
+        try {
+          currentAudioRef.current.pause();
+          currentAudioRef.current.currentTime = 0;
         } catch {}
       }
       if (synthesisSupported && window.speechSynthesis) {
@@ -86,6 +101,9 @@ export function useSpeech({ language = 'en', t } = {}) {
     if (!isNaN(num) && num >= 0.5 && num <= 2.0) {
       setVoiceSpeedState(num);
       saveStoredVoiceSpeed(num);
+      if (currentAudioRef.current) {
+        currentAudioRef.current.playbackRate = num;
+      }
     }
   }, []);
 
@@ -171,26 +189,14 @@ export function useSpeech({ language = 'en', t } = {}) {
     setVoiceState('IDLE');
   }, []);
 
-  // Speak AI rebuttal text
-  const speakAIResponse = useCallback((text) => {
+  // Browser SpeechSynthesis fallback
+  const fallbackBrowserSpeech = useCallback((cleanText) => {
     if (!synthesisSupported || !window.speechSynthesis || isMuted) {
+      setVoiceState('IDLE');
       return;
     }
 
-    // Abort active recognition to prevent feedback loop
-    if (recognitionRef.current) {
-      try {
-        recognitionRef.current.abort();
-      } catch {}
-    }
-
     window.speechSynthesis.cancel();
-
-    const cleanText = (text || '')
-      .replace(/[*#_`]/g, '')
-      .trim();
-
-    if (!cleanText) return;
 
     const utterance = new SpeechSynthesisUtterance(cleanText);
     currentUtteranceRef.current = utterance;
@@ -198,14 +204,11 @@ export function useSpeech({ language = 'en', t } = {}) {
     utterance.pitch = 1.0;
     utterance.lang = speechLang;
 
-    // Voice Selection Hierarchy:
-    // 1. Exact locale match (e.g. te-IN, hi-IN, en-IN)
-    // 2. Language prefix match (e.g. te, hi, en)
-    // 3. Fallback to default
     const availableVoices = voices.length > 0 ? voices : window.speechSynthesis.getVoices();
     const langNormalized = speechLang.toLowerCase().replace('_', '-');
     const langPrefix = langNormalized.split('-')[0];
 
+    // Priority: 1. Exact locale (te-IN) -> 2. Base language (te) -> 3. Closest match
     let matchedVoice = availableVoices.find(v => {
       const vLang = v.lang.toLowerCase().replace('_', '-');
       return vLang === langNormalized;
@@ -222,7 +225,6 @@ export function useSpeech({ language = 'en', t } = {}) {
       utterance.voice = matchedVoice;
       setErrorMessage(null);
     } else if (availableVoices.length > 0 && langPrefix !== 'en') {
-      // Browser voice for this non-English language is unavailable
       setErrorMessage(translate('voice.voiceUnavailable', { 
         lang: LANGUAGE_CONFIG[language]?.aiLanguage || language 
       }));
@@ -245,8 +247,82 @@ export function useSpeech({ language = 'en', t } = {}) {
     window.speechSynthesis.speak(utterance);
   }, [synthesisSupported, isMuted, voiceSpeed, speechLang, voices, language, translate]);
 
+  // Speak AI rebuttal text with neural TTS and browser fallback
+  const speakAIResponse = useCallback((text) => {
+    if (isMuted) return;
+
+    // Abort active recognition
+    if (recognitionRef.current) {
+      try {
+        recognitionRef.current.abort();
+      } catch {}
+    }
+
+    // Stop existing audio or utterance
+    if (currentAudioRef.current) {
+      try {
+        currentAudioRef.current.pause();
+        currentAudioRef.current.currentTime = 0;
+      } catch {}
+      currentAudioRef.current = null;
+    }
+    if (synthesisSupported && window.speechSynthesis) {
+      window.speechSynthesis.cancel();
+    }
+
+    const cleanText = (text || '')
+      .replace(/[*#_`~]/g, '')
+      .replace(/\s+/g, ' ')
+      .trim();
+
+    if (!cleanText) return;
+
+    // Attempt neural server-side TTS
+    try {
+      const baseUrl = import.meta.env.VITE_API_URL || '';
+      const langCode = (language || 'en').toLowerCase();
+      const ttsUrl = `${baseUrl}/api/tts?text=${encodeURIComponent(cleanText.slice(0, 195))}&lang=${encodeURIComponent(langCode)}`;
+
+      const audio = new Audio(ttsUrl);
+      currentAudioRef.current = audio;
+      audio.playbackRate = voiceSpeed;
+
+      audio.onplay = () => {
+        setVoiceState('AI_SPEAKING');
+        setErrorMessage(null);
+      };
+
+      audio.onended = () => {
+        setVoiceState('IDLE');
+        currentAudioRef.current = null;
+      };
+
+      audio.onerror = () => {
+        currentAudioRef.current = null;
+        fallbackBrowserSpeech(cleanText);
+      };
+
+      const playPromise = audio.play();
+      if (playPromise !== undefined) {
+        playPromise.catch(() => {
+          currentAudioRef.current = null;
+          fallbackBrowserSpeech(cleanText);
+        });
+      }
+    } catch {
+      fallbackBrowserSpeech(cleanText);
+    }
+  }, [isMuted, language, voiceSpeed, synthesisSupported, fallbackBrowserSpeech]);
+
   // Stop speaking immediately
   const stopSpeaking = useCallback(() => {
+    if (currentAudioRef.current) {
+      try {
+        currentAudioRef.current.pause();
+        currentAudioRef.current.currentTime = 0;
+      } catch {}
+      currentAudioRef.current = null;
+    }
     if (synthesisSupported && window.speechSynthesis) {
       window.speechSynthesis.cancel();
     }
@@ -257,8 +333,17 @@ export function useSpeech({ language = 'en', t } = {}) {
   const toggleMute = useCallback(() => {
     setIsMuted((prev) => {
       const nextMuted = !prev;
-      if (nextMuted && synthesisSupported && window.speechSynthesis) {
-        window.speechSynthesis.cancel();
+      if (nextMuted) {
+        if (currentAudioRef.current) {
+          try {
+            currentAudioRef.current.pause();
+            currentAudioRef.current.currentTime = 0;
+          } catch {}
+          currentAudioRef.current = null;
+        }
+        if (synthesisSupported && window.speechSynthesis) {
+          window.speechSynthesis.cancel();
+        }
         setVoiceState('IDLE');
       }
       return nextMuted;

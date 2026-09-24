@@ -3,7 +3,7 @@ import { Globe, Volume2, CheckCircle2, MessageSquare, ArrowRight } from 'lucide-
 import { useLanguage, SUPPORTED_LANGUAGES } from '../../i18n';
 
 export default function LanguageSection({ speech }) {
-  const { language, setLanguage } = useLanguage();
+  const { language, setLanguage, t } = useLanguage();
 
   const languageSamples = {
     en: {
@@ -47,15 +47,15 @@ export default function LanguageSection({ speech }) {
         <div className="text-center max-w-2xl mx-auto mb-16">
           <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-white/[0.04] border border-white/[0.08] text-[11px] font-mono uppercase tracking-widest text-[#A1A1AA] mb-4">
             <Globe className="w-3.5 h-3.5 text-[#6366F1]" />
-            <span>NATIVE MULTILINGUAL DIALECTIC</span>
+            <span>{t('landing.multilingual.badge')}</span>
           </div>
 
           <h2 className="text-3xl sm:text-5xl font-bold tracking-tight text-[#F5F5F7]">
-            "Your language. Your argument."
+            {t('landing.multilingual.title')}
           </h2>
 
           <p className="mt-4 text-base sm:text-lg text-[#A1A1AA]">
-            Sparring reasons, listens, and articulates rebuttals natively in multiple languages without clumsy literal translation.
+            {t('landing.multilingual.subtitle')}
           </p>
         </div>
 
@@ -83,7 +83,7 @@ export default function LanguageSection({ speech }) {
           <div className="flex items-center justify-between pb-4 border-b border-white/[0.08] mb-6">
             <div>
               <span className="font-mono text-[10px] uppercase tracking-wider text-[#71717A] block">
-                ACTIVE LANGUAGE ARENA
+                {t('landing.multilingual.activeArena')}
               </span>
               <h3 className="text-sm font-semibold text-[#F5F5F7]">
                 {currentSample.title} ({currentSample.native})
@@ -96,7 +96,7 @@ export default function LanguageSection({ speech }) {
               className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-white/[0.05] hover:bg-white/[0.1] border border-white/[0.1] text-xs font-mono text-[#22D3EE] transition-all"
             >
               <Volume2 className="w-3.5 h-3.5" />
-              <span>Hear Spoken Rebuttal</span>
+              <span>{t('landing.multilingual.hearRebuttal')}</span>
             </button>
           </div>
 
@@ -114,7 +114,7 @@ export default function LanguageSection({ speech }) {
             {/* Debater Argument */}
             <div className="p-3.5 rounded-xl bg-white/[0.02] border border-cyan-500/20">
               <span className="font-mono text-[10px] uppercase text-[#22D3EE] block mb-1">
-                YOU (STANCE)
+                {t('landing.multilingual.debaterArg', { lang: currentSample.title })}
               </span>
               <p className="text-xs sm:text-sm text-[#D4D4D8]">
                 "{currentSample.argument}"
@@ -124,7 +124,7 @@ export default function LanguageSection({ speech }) {
             {/* AI Opponent Counter */}
             <div className="p-4 rounded-xl bg-gradient-to-br from-[#7C3AED]/10 to-transparent border border-[#7C3AED]/30">
               <span className="font-mono text-[10px] uppercase text-[#A78BFA] block mb-1">
-                SPARRING AI COUNTER-ARGUMENT
+                {t('landing.multilingual.aiOpponentCounter', { lang: currentSample.title })}
               </span>
               <p className="text-xs sm:text-sm text-[#F5F5F7] leading-relaxed">
                 "{currentSample.counter}"

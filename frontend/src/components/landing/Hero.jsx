@@ -1,8 +1,10 @@
 import React, { useState, useEffect } from 'react';
 import { ArrowRight, Play, Terminal, Sparkles, Command } from 'lucide-react';
+import { useLanguage } from '../../i18n';
 import HeroDebateVisual from './HeroDebateVisual';
 
 export default function Hero({ onStartDebating, onExploreHowItWorks }) {
+  const { t } = useLanguage();
   const [isMac, setIsMac] = useState(false);
 
   useEffect(() => {
@@ -21,26 +23,26 @@ export default function Hero({ onStartDebating, onExploreHowItWorks }) {
         <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-white/[0.04] border border-white/[0.08] shadow-sm mb-6 backdrop-blur-md">
           <span className="w-1.5 h-1.5 rounded-full bg-[#7C3AED] shadow-sm shadow-[#7C3AED]" />
           <span className="font-mono text-[11px] uppercase tracking-widest text-[#A1A1AA]">
-            AI-POWERED DEBATE ARENA
+            {t('landing.hero.badge')}
           </span>
           <span className="text-[#52525B]">/</span>
           <span className="font-mono text-[10px] uppercase text-[#22D3EE] font-medium">
-            GEN 3.5
+            {t('landing.hero.version')}
           </span>
         </div>
 
         {/* Main Headline */}
         <h1 className="text-4xl sm:text-6xl lg:text-7xl font-bold tracking-tight text-[#F5F5F7] max-w-4xl mx-auto leading-[1.08] sm:leading-[1.05] uppercase">
-          THINK SHARPER.
+          {t('landing.hero.titleLine1')}
           <br />
           <span className="hero-headline-gradient block">
-            DEBATE SMARTER.
+            {t('landing.hero.titleLine2')}
           </span>
         </h1>
 
         {/* Supporting Subtitle */}
         <p className="mt-6 text-base sm:text-lg lg:text-xl text-[#A1A1AA] max-w-2xl mx-auto leading-relaxed font-normal">
-          Challenge your assumptions, sharpen your arguments, and test your reasoning against an AI that argues back.
+          {t('landing.hero.subtitle')}
         </p>
 
         {/* Call to Actions */}
@@ -50,7 +52,7 @@ export default function Hero({ onStartDebating, onExploreHowItWorks }) {
             onClick={onStartDebating}
             className="w-full sm:w-auto inline-flex items-center justify-center gap-2 px-7 py-3 rounded-lg bg-gradient-to-r from-[#7C3AED] to-[#6366F1] hover:from-[#6D28D9] hover:to-[#4F46E5] text-white font-medium text-sm shadow-lg shadow-[#7C3AED]/30 transition-all duration-300 hover:shadow-xl hover:shadow-[#7C3AED]/40 hover:-translate-y-0.5 active:translate-y-0 group"
           >
-            <span>Start a Debate</span>
+            <span>{t('landing.hero.startDebate')}</span>
             <ArrowRight className="w-4 h-4 transition-transform duration-300 group-hover:translate-x-1" />
           </button>
 
@@ -60,20 +62,20 @@ export default function Hero({ onStartDebating, onExploreHowItWorks }) {
             className="w-full sm:w-auto inline-flex items-center justify-center gap-2 px-6 py-3 rounded-lg bg-white/[0.04] hover:bg-white/[0.07] border border-white/[0.08] hover:border-white/[0.15] text-[#F5F5F7] font-medium text-sm transition-all duration-300 hover:-translate-y-0.5"
           >
             <Play className="w-3.5 h-3.5 text-[#22D3EE] fill-[#22D3EE]/20" />
-            <span>See How It Works</span>
+            <span>{t('landing.hero.seeHowItWorks')}</span>
           </button>
         </div>
 
         {/* Subtle Keyboard Hint */}
         <div className="mt-4 flex items-center justify-center gap-1.5 text-xs text-[#71717A] font-mono">
-          <span>Press</span>
+          <span>{t('landing.hero.press')}</span>
           <kbd className="px-1.5 py-0.5 rounded bg-white/[0.06] border border-white/[0.1] text-[11px] text-[#A1A1AA] font-mono">
             {isMac ? '⌘' : 'Ctrl'}
           </kbd>
           <kbd className="px-1.5 py-0.5 rounded bg-white/[0.06] border border-white/[0.1] text-[11px] text-[#A1A1AA] font-mono">
             K
           </kbd>
-          <span>to launch arena</span>
+          <span>{t('landing.hero.toLaunch')}</span>
         </div>
 
         {/* Hero Interactive Debate Visual */}

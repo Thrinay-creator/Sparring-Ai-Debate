@@ -1,11 +1,12 @@
 import { Router } from 'express';
+import { getProviderKey } from '../services/gemini.js';
 
 const router = Router();
 
 router.get('/health', async (req, res) => {
-  const geminiKey = (process.env.GEMINI_API_KEY || process.env.GEMINI_KEY || '').trim();
-  const groqKey = (process.env.GROQ_API_KEY || process.env.GROQ_KEY || process.env.GROQ_APIKEY || '').trim();
-  const mistralKey = (process.env.MISTRAL_API_KEY || process.env.MISTRAL_KEY || process.env.MISTRAL_APIKEY || '').trim();
+  const geminiKey = getProviderKey('gemini');
+  const groqKey = getProviderKey('groq');
+  const mistralKey = getProviderKey('mistral');
 
   if (req.query.diagnostic === '1' || req.query.details === 'true') {
     const diagnostic = {
@@ -14,7 +15,10 @@ router.get('/health', async (req, res) => {
         gemini: Boolean(geminiKey),
         groq: Boolean(groqKey),
         mistral: Boolean(mistralKey)
-      }
+      },
+      detected_key_names: Object.keys(process.env)
+        .filter(k => /gemini|google|groq|mistral/i.test(k))
+        .map(k => k.trim())
     };
 
     if (req.query.test_provider === 'mistral' && mistralKey) {

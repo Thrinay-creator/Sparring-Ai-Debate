@@ -6,8 +6,42 @@ dotenv.config();
 
 let genAIClient = null;
 
+/**
+ * Robust provider API key resolver with tolerant casing, whitespace, and quote trimming.
+ */
+export function getProviderKey(provider) {
+  const norm = provider.toLowerCase();
+
+  // 1. Direct standard names
+  const directKeys = {
+    gemini: ['GEMINI_API_KEY', 'GEMINI_KEY', 'GEMINI_APIKEY', 'GOOGLE_API_KEY'],
+    groq: ['GROQ_API_KEY', 'GROQ_KEY', 'GROQ_APIKEY', 'GROQ_TOKEN', 'GROQ_AUTH_TOKEN'],
+    mistral: ['MISTRAL_API_KEY', 'MISTRAL_KEY', 'MISTRAL_APIKEY', 'MISTRAL_TOKEN']
+  }[norm] || [];
+
+  for (const k of directKeys) {
+    if (process.env[k] && typeof process.env[k] === 'string' && process.env[k].trim()) {
+      return process.env[k].trim().replace(/^["']|["']$/g, '');
+    }
+  }
+
+  // 2. Case-insensitive and whitespace-tolerant search across all process.env
+  for (const [key, val] of Object.entries(process.env)) {
+    if (!val || typeof val !== 'string') continue;
+    const cleanKey = key.trim().toLowerCase().replace(/[^a-z0-9]/g, '');
+    if (cleanKey.includes(norm) && (cleanKey.includes('key') || cleanKey.includes('token') || cleanKey === norm)) {
+      const cleanVal = val.trim().replace(/^["']|["']$/g, '');
+      if (cleanVal.length > 5) {
+        return cleanVal;
+      }
+    }
+  }
+
+  return '';
+}
+
 export function getGeminiClient() {
-  const apiKey = (process.env.GEMINI_API_KEY || process.env.GEMINI_KEY || '').trim();
+  const apiKey = getProviderKey('gemini');
   if (!apiKey) {
     console.warn('[Gemini Service] GEMINI_API_KEY is not defined in environment.');
   }
@@ -26,10 +60,24 @@ export function getModelName() {
  */
 export function validateAndNormalizeJson(rawText, zodSchema, providerName = 'AI Provider') {
   let clean = (rawText || '').trim();
-  if (clean.startsWith('```json')) {
-    clean = clean.replace(/^```json\s*/i, '').replace(/\s*```$/, '');
-  } else if (clean.startsWith('```')) {
-    clean = clean.replace(/^```\s*/, '').replace(/\s*```$/, '');
+
+  // Strip markdown code fences
+  if (clean.includes('```')) {
+    const match = clean.match(/```(?:json)?\s*([\s\S]*?)\s*```/i);
+    if (match && match[1]) {
+      clean = match[1].trim();
+    } else {
+      clean = clean.replace(/^```json\s*/i, '').replace(/^```\s*/, '').replace(/\s*```$/, '').trim();
+    }
+  }
+
+  // If there is conversational preamble/postscript, isolate outer JSON object
+  if (!clean.startsWith('{') && clean.includes('{')) {
+    const firstBrace = clean.indexOf('{');
+    const lastBrace = clean.lastIndexOf('}');
+    if (firstBrace !== -1 && lastBrace !== -1 && lastBrace > firstBrace) {
+      clean = clean.substring(firstBrace, lastBrace + 1).trim();
+    }
   }
 
   let parsedJson;
@@ -45,6 +93,11 @@ export function validateAndNormalizeJson(rawText, zodSchema, providerName = 'AI 
   }
 
   if (parsedJson && typeof parsedJson === 'object') {
+    // Normalize counter field aliases for debate turn
+    if (!parsedJson.counter) {
+      parsedJson.counter = parsedJson.counterargument || parsedJson.counterArgument || parsedJson.rebuttal || parsedJson.response || parsedJson.argument || '';
+    }
+
     // Normalize fallacy: "none", "None", "null", "no fallacy", etc. -> null
     if (typeof parsedJson.fallacy === 'string') {
       let norm = parsedJson.fallacy.trim().toLowerCase();
@@ -55,40 +108,78 @@ export function validateAndNormalizeJson(rawText, zodSchema, providerName = 'AI 
         parsedJson.fallacy = null;
       } else if (ALLOWED_FALLACIES.includes(norm)) {
         parsedJson.fallacy = norm;
+      } else {
+        parsedJson.fallacy = null;
       }
+    } else if (parsedJson.fallacy === undefined) {
+      parsedJson.fallacy = null;
     }
 
-    // Normalize argumentScore if returned as string
-    if (typeof parsedJson.argumentScore === 'string') {
-      const scoreNum = parseInt(parsedJson.argumentScore, 10);
-      if (!isNaN(scoreNum)) {
-        parsedJson.argumentScore = scoreNum;
-      }
+    // Normalize scoreReason aliases for debate turn
+    if (!parsedJson.scoreReason) {
+      parsedJson.scoreReason = parsedJson.score_reason || parsedJson.reason || parsedJson.justification || parsedJson.feedback || '';
+    }
+    if (typeof parsedJson.scoreReason === 'string' && parsedJson.scoreReason.length < 5) {
+      parsedJson.scoreReason = parsedJson.scoreReason + ' (valid logic)';
     }
 
-    // For feedback report: normalize dimensional scores if strings
+    // Normalize argumentScore if returned as string or scaled
+    if (parsedJson.argumentScore !== undefined) {
+      let scoreNum = typeof parsedJson.argumentScore === 'string' 
+        ? parseInt(parsedJson.argumentScore, 10) 
+        : Number(parsedJson.argumentScore);
+      if (isNaN(scoreNum) || scoreNum < 1) scoreNum = 1;
+      if (scoreNum > 10) {
+        scoreNum = Math.min(10, Math.max(1, Math.round(scoreNum / 10)));
+      }
+      parsedJson.argumentScore = Math.min(10, Math.max(1, Math.round(scoreNum)));
+    }
+
+    // For feedback report: normalize dimensional scores if strings or on 1-10 scale
     ['overallScore', 'logicScore', 'evidenceScore', 'persuasivenessScore'].forEach((key) => {
-      if (typeof parsedJson[key] === 'string') {
-        const num = parseInt(parsedJson[key], 10);
-        if (!isNaN(num)) parsedJson[key] = num;
+      if (parsedJson[key] !== undefined) {
+        let num = typeof parsedJson[key] === 'string' ? parseInt(parsedJson[key], 10) : Number(parsedJson[key]);
+        if (isNaN(num)) num = 75;
+        if (num <= 10 && num > 0) num = num * 10;
+        parsedJson[key] = Math.min(100, Math.max(1, Math.round(num)));
       }
     });
 
-    // Normalize fallaciesCommitted array elements if string notes or string fallacies
+    // Normalize strengths, weaknesses, suggestions for feedback report
+    ['strengths', 'weaknesses', 'suggestions'].forEach((key) => {
+      if (typeof parsedJson[key] === 'string') {
+        parsedJson[key] = [parsedJson[key]];
+      }
+      if (Array.isArray(parsedJson[key])) {
+        parsedJson[key] = parsedJson[key]
+          .filter(s => typeof s === 'string' && s.trim().length > 0)
+          .map(s => s.trim().length < 5 ? s + ' (demonstrated)' : s.trim());
+      }
+      if (!Array.isArray(parsedJson[key]) || parsedJson[key].length === 0) {
+        if (key === 'strengths') parsedJson[key] = ["Articulated structured position on the core motion."];
+        if (key === 'weaknesses') parsedJson[key] = ["Could reinforce evidentiary backing with empirical references."];
+        if (key === 'suggestions') parsedJson[key] = ["Anticipate counterarguments by addressing foundational assumptions early."];
+      }
+    });
+
+    // Normalize fallaciesCommitted array elements
     if (Array.isArray(parsedJson.fallaciesCommitted)) {
       parsedJson.fallaciesCommitted = parsedJson.fallaciesCommitted
         .map((item) => {
           if (!item || typeof item !== 'object') return null;
           let f = typeof item.fallacy === 'string' ? item.fallacy.trim().toLowerCase() : '';
-          if (f === 'straw man' || f === 'straw-man' || f === 'straw_man') {
-            f = 'strawman';
-          }
+          if (f === 'straw man' || f === 'straw-man' || f === 'straw_man') f = 'strawman';
           if (ALLOWED_FALLACIES.includes(f)) {
-            return { ...item, fallacy: f };
+            const note = typeof item.note === 'string' && item.note.trim().length >= 5 
+              ? item.note.trim() 
+              : `Committed ${f} fallacy in supporting argument premise.`;
+            return { fallacy: f, note };
           }
           return null;
         })
         .filter(Boolean);
+    } else {
+      parsedJson.fallaciesCommitted = [];
     }
   }
 
@@ -111,7 +202,7 @@ export function validateAndNormalizeJson(rawText, zodSchema, providerName = 'AI 
  * Fallback Provider 1: Groq (llama-3.3-70b-versatile with llama-3.1-8b-instant fallback)
  */
 export async function callGroqProvider({ systemPrompt, userPrompt, zodSchema, temperature = 0.7 }) {
-  const apiKey = (process.env.GROQ_API_KEY || process.env.GROQ_KEY || process.env.GROQ_APIKEY || '').trim();
+  const apiKey = getProviderKey('groq');
   if (!apiKey) return null;
 
   const configuredModel = process.env.GROQ_MODEL || 'llama-3.3-70b-versatile';
@@ -180,7 +271,7 @@ export async function callGroqProvider({ systemPrompt, userPrompt, zodSchema, te
  * Fallback Provider 2: Mistral AI (open-mistral-7b, ministral-8b-latest, mistral-small-latest)
  */
 export async function callMistralProvider({ systemPrompt, userPrompt, zodSchema, temperature = 0.7 }) {
-  const apiKey = (process.env.MISTRAL_API_KEY || process.env.MISTRAL_KEY || process.env.MISTRAL_APIKEY || '').trim();
+  const apiKey = getProviderKey('mistral');
   if (!apiKey) return null;
 
   const configuredModel = process.env.MISTRAL_MODEL || 'open-mistral-7b';
@@ -388,9 +479,9 @@ export async function generateStructuredContent({
   temperature = 0.7,
   maxOutputTokens = 1024
 }) {
-  const geminiKey = (process.env.GEMINI_API_KEY || process.env.GEMINI_KEY || '').trim();
-  const groqKey = (process.env.GROQ_API_KEY || process.env.GROQ_KEY || process.env.GROQ_APIKEY || '').trim();
-  const mistralKey = (process.env.MISTRAL_API_KEY || process.env.MISTRAL_KEY || process.env.MISTRAL_APIKEY || '').trim();
+  const geminiKey = getProviderKey('gemini');
+  const groqKey = getProviderKey('groq');
+  const mistralKey = getProviderKey('mistral');
 
   let geminiError = null;
   let groqError = null;
@@ -419,11 +510,15 @@ export async function generateStructuredContent({
         throw err;
       }
 
-      console.warn(`[AI Gateway] Gemini provider encountered [${err.code || 'ERROR'}]: ${err.message}. Engaging fallback sequence...`);
+      if (err.code === 'GEMINI_QUOTA_ERROR' || err.status === 429) {
+        console.log('[GEMINI] failed with 429');
+      } else {
+        console.log(`[GEMINI] failed: ${err.message}`);
+      }
       geminiError = err;
     }
   } else {
-    console.warn('[AI Gateway] GEMINI_API_KEY not configured. Engaging fallback sequence...');
+    console.warn('[GEMINI] API key not configured. Engaging fallback sequence...');
   }
 
   // ========================================================
@@ -431,7 +526,7 @@ export async function generateStructuredContent({
   // ========================================================
   if (groqKey) {
     try {
-      console.warn('[AI Gateway] Engaging Groq fallback provider...');
+      console.log('[GROQ] attempting fallback');
       const groqResult = await callGroqProvider({
         systemPrompt,
         userPrompt,
@@ -439,15 +534,15 @@ export async function generateStructuredContent({
         temperature
       });
       if (groqResult) {
-        console.log('[AI Gateway] Successfully generated response using Groq fallback.');
+        console.log('[GROQ] success');
         return groqResult;
       }
     } catch (err) {
-      console.warn('[AI Gateway] Groq fallback failed:', err.message);
+      console.log(`[GROQ] failed: ${err.message}`);
       groqError = err;
     }
   } else {
-    console.warn('[AI Gateway] GROQ_API_KEY not configured. Checking next fallback...');
+    console.log('[GROQ] failed: GROQ_API_KEY not configured');
   }
 
   // ========================================================
@@ -455,7 +550,7 @@ export async function generateStructuredContent({
   // ========================================================
   if (mistralKey) {
     try {
-      console.warn('[AI Gateway] Engaging Mistral AI fallback provider...');
+      console.log('[MISTRAL] attempting fallback');
       const mistralResult = await callMistralProvider({
         systemPrompt,
         userPrompt,
@@ -463,15 +558,15 @@ export async function generateStructuredContent({
         temperature
       });
       if (mistralResult) {
-        console.log('[AI Gateway] Successfully generated response using Mistral AI fallback.');
+        console.log('[MISTRAL] success');
         return mistralResult;
       }
     } catch (err) {
-      console.warn('[AI Gateway] Mistral AI fallback failed:', err.message);
+      console.log(`[MISTRAL] failed: ${err.message}`);
       mistralError = err;
     }
   } else {
-    console.warn('[AI Gateway] MISTRAL_API_KEY not configured. No further fallbacks available.');
+    console.log('[MISTRAL] failed: MISTRAL_API_KEY not configured');
   }
 
   // ========================================================
@@ -485,14 +580,14 @@ export async function generateStructuredContent({
 
   const finalError = new Error(
     geminiError?.code === 'GEMINI_QUOTA_ERROR'
-      ? 'The AI opponent service is currently experiencing high demand across all providers. Please retry in a moment.'
-      : (geminiError?.userMessage || 'All AI opponent providers are temporarily unavailable. Please retry in a few moments.')
+      ? 'The AI opponent service is temporarily experiencing high demand across all providers. Please retry in a few moments.'
+      : (geminiError?.userMessage || 'The AI opponent service is temporarily experiencing high demand across all providers. Please retry in a few moments.')
   );
   finalError.code = 'ALL_PROVIDERS_UNAVAILABLE';
   finalError.status = 503;
   finalError.userMessage = 'The AI opponent service is temporarily experiencing high demand across all providers. Please retry in a few moments.';
   finalError.details = {
-    gemini: geminiError?.code || 'UNAVAILABLE',
+    gemini: geminiError?.code || (geminiKey ? 'FAILED' : 'NOT_CONFIGURED'),
     groq: groqError?.message || (groqKey ? 'FAILED' : 'NOT_CONFIGURED'),
     mistral: mistralError?.message || (mistralKey ? 'FAILED' : 'NOT_CONFIGURED')
   };

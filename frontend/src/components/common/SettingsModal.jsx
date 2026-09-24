@@ -96,7 +96,7 @@ export default function SettingsModal({
           <div className="flex items-center gap-1.5">
             <User className="w-3.5 h-3.5 text-chamber-amber" />
             <label className="text-xs uppercase font-semibold tracking-wider text-chamber-muted">
-              Profile Information
+              {t('settings.profileInfo')}
             </label>
           </div>
 
@@ -107,12 +107,12 @@ export default function SettingsModal({
                   GU
                 </div>
                 <div>
-                  <div className="text-sm font-semibold text-chamber-text">Guest User</div>
-                  <div className="text-xs text-chamber-muted">Guest Mode • Local browser storage</div>
+                  <div className="text-sm font-semibold text-chamber-text">{t('settings.guestUser')}</div>
+                  <div className="text-xs text-chamber-muted">{t('settings.guestMode')}</div>
                 </div>
               </div>
               <span className="text-[10px] font-mono uppercase px-2 py-0.5 rounded bg-slate-800 text-slate-400 border border-slate-700">
-                Guest
+                {t('auth.guest')}
               </span>
             </div>
           ) : (
@@ -137,12 +137,12 @@ export default function SettingsModal({
                 </div>
                 <div className="flex items-center gap-1 text-[11px] text-emerald-400 font-medium px-2 py-0.5 rounded bg-emerald-950/40 border border-emerald-800/60">
                   <ShieldCheck className="w-3 h-3" />
-                  <span>Active</span>
+                  <span>{t('settings.active')}</span>
                 </div>
               </div>
               <div className="pt-2 border-t border-chamber-border/60 flex items-center justify-between text-xs text-chamber-muted">
-                <span>Provider: <strong className="text-chamber-text font-medium">{authProvider}</strong></span>
-                <span>Status: <strong className="text-emerald-400 font-medium">Authenticated</strong></span>
+                <span>{t('settings.provider')} <strong className="text-chamber-text font-medium">{authProvider}</strong></span>
+                <span>{t('settings.status')} <strong className="text-emerald-400 font-medium">{t('settings.authenticated')}</strong></span>
               </div>
             </div>
           )}
@@ -246,10 +246,10 @@ export default function SettingsModal({
             <div>
               <label className="text-xs uppercase font-semibold tracking-wider text-chamber-muted block flex items-center gap-1.5">
                 <Gauge className="w-3.5 h-3.5 text-chamber-amber" />
-                <span>AI Voice Speed</span>
+                <span>{t('settings.voiceSpeed')}</span>
               </label>
               <p className="text-xs text-chamber-muted mt-0.5">
-                Speech playback rate for AI opponent rebuttals.
+                {t('settings.voiceSpeedDesc')}
               </p>
             </div>
             <span className="font-mono text-xs font-bold px-2 py-0.5 rounded bg-chamber-amber/20 text-chamber-amber border border-chamber-amber/40">

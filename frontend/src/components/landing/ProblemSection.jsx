@@ -1,7 +1,10 @@
 import React from 'react';
 import { MessageSquare, ArrowRight, ShieldCheck, XCircle, CheckCircle2, Flame } from 'lucide-react';
+import { useLanguage } from '../../i18n';
 
 export default function ProblemSection() {
+  const { t } = useLanguage();
+
   return (
     <section className="relative py-24 sm:py-32 overflow-hidden" id="about">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
@@ -9,15 +12,15 @@ export default function ProblemSection() {
         <div className="text-center max-w-3xl mx-auto mb-16 sm:mb-20">
           <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-white/[0.04] border border-white/[0.08] text-[11px] font-mono uppercase tracking-widest text-[#A1A1AA] mb-4">
             <Flame className="w-3.5 h-3.5 text-amber-400" />
-            <span>THE COGNITIVE PROBLEM</span>
+            <span>{t('landing.problem.badge')}</span>
           </div>
 
           <h2 className="text-3xl sm:text-5xl font-bold tracking-tight text-[#F5F5F7]">
-            "Most AI conversations are too comfortable."
+            {t('landing.problem.title')}
           </h2>
 
           <p className="mt-4 text-base sm:text-lg text-[#A1A1AA] leading-relaxed">
-            AI usually answers your question. Sparring challenges your answer.
+            {t('landing.problem.subtitle')}
           </p>
         </div>
 
@@ -33,15 +36,15 @@ export default function ProblemSection() {
                   </div>
                   <div>
                     <h3 className="text-sm font-semibold text-zinc-300">
-                      Traditional AI Chat
+                      {t('landing.problem.tradTitle')}
                     </h3>
                     <span className="font-mono text-[10px] text-zinc-500 uppercase">
-                      Passive Echo Chamber
+                      {t('landing.problem.tradSub')}
                     </span>
                   </div>
                 </div>
                 <span className="px-2 py-0.5 rounded text-[10px] font-mono bg-zinc-900 text-zinc-400 border border-zinc-800">
-                  STANDARD
+                  {t('landing.problem.standard')}
                 </span>
               </div>
 
@@ -51,26 +54,26 @@ export default function ProblemSection() {
                   <span className="w-5 h-5 rounded-full bg-zinc-800/80 border border-zinc-700 text-[10px] font-mono flex items-center justify-center text-zinc-400">
                     1
                   </span>
-                  <span>You ask a question.</span>
+                  <span>{t('landing.problem.tradStep1')}</span>
                 </div>
                 <div className="flex items-center gap-3 text-zinc-400 text-sm">
                   <span className="w-5 h-5 rounded-full bg-zinc-800/80 border border-zinc-700 text-[10px] font-mono flex items-center justify-center text-zinc-400">
                     2
                   </span>
-                  <span>AI generates an agreeable answer.</span>
+                  <span>{t('landing.problem.tradStep2')}</span>
                 </div>
                 <div className="flex items-center gap-3 text-zinc-500 text-sm italic">
                   <span className="w-5 h-5 rounded-full bg-zinc-900 border border-zinc-800 text-[10px] font-mono flex items-center justify-center text-zinc-500">
                     3
                   </span>
-                  <span>Conversation quietly ends.</span>
+                  <span>{t('landing.problem.tradStep3')}</span>
                 </div>
               </div>
             </div>
 
             <div className="pt-4 border-t border-white/[0.06] flex items-center gap-2 text-xs text-zinc-500 font-mono">
               <XCircle className="w-4 h-4 text-zinc-500" />
-              <span>Result: Unchallenged assumptions & intellectual comfort</span>
+              <span>{t('landing.problem.tradResult')}</span>
             </div>
           </div>
 
@@ -87,15 +90,15 @@ export default function ProblemSection() {
                   </div>
                   <div>
                     <h3 className="text-sm font-semibold text-[#F5F5F7]">
-                      Sparring Arena
+                      {t('landing.problem.sparringTitle')}
                     </h3>
                     <span className="font-mono text-[10px] text-[#A78BFA] uppercase">
-                      Adversarial AI Opponent
+                      {t('landing.problem.sparringSub')}
                     </span>
                   </div>
                 </div>
                 <span className="px-2 py-0.5 rounded text-[10px] font-mono bg-purple-950/80 text-purple-300 border border-purple-700/50">
-                  DIALECTIC
+                  {t('landing.problem.dialectic')}
                 </span>
               </div>
 
@@ -105,38 +108,26 @@ export default function ProblemSection() {
                   <span className="w-5 h-5 rounded-full bg-[#7C3AED]/20 border border-[#7C3AED]/50 text-[10px] font-mono flex items-center justify-center text-[#A78BFA]">
                     1
                   </span>
-                  <span>You stake an intellectual claim.</span>
+                  <span>{t('landing.problem.sparringStep1')}</span>
                 </div>
                 <div className="flex items-center gap-3 text-[#F5F5F7] text-sm">
                   <span className="w-5 h-5 rounded-full bg-[#7C3AED]/20 border border-[#7C3AED]/50 text-[10px] font-mono flex items-center justify-center text-[#A78BFA]">
                     2
                   </span>
-                  <span>AI rigorously challenges your premises.</span>
-                </div>
-                <div className="flex items-center gap-3 text-[#F5F5F7] text-sm">
-                  <span className="w-5 h-5 rounded-full bg-[#7C3AED]/20 border border-[#7C3AED]/50 text-[10px] font-mono flex items-center justify-center text-[#A78BFA]">
-                    3
-                  </span>
-                  <span>You defend with evidence & rebuttal.</span>
+                  <span>{t('landing.problem.sparringStep2')}</span>
                 </div>
                 <div className="flex items-center gap-3 text-[#F5F5F7] text-sm font-medium">
                   <span className="w-5 h-5 rounded-full bg-[#22D3EE]/20 border border-[#22D3EE]/50 text-[10px] font-mono flex items-center justify-center text-[#22D3EE]">
-                    4
+                    3
                   </span>
-                  <span>AI counters & exposes logical fallacies.</span>
-                </div>
-                <div className="flex items-center gap-3 text-emerald-300 text-sm font-semibold">
-                  <span className="w-5 h-5 rounded-full bg-emerald-500/20 border border-emerald-500/50 text-[10px] font-mono flex items-center justify-center text-emerald-400">
-                    5
-                  </span>
-                  <span>You improve your reasoning systematically.</span>
+                  <span>{t('landing.problem.sparringStep3')}</span>
                 </div>
               </div>
             </div>
 
             <div className="pt-4 border-t border-white/[0.08] flex items-center gap-2 text-xs text-emerald-400 font-mono">
               <CheckCircle2 className="w-4 h-4 text-emerald-400" />
-              <span>Result: Sharp critical thinking, resilience & clarity</span>
+              <span>{t('landing.problem.sparringResult')}</span>
             </div>
           </div>
         </div>

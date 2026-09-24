@@ -1,38 +1,41 @@
 import React from 'react';
 import { Target, Scale, Zap, BarChart2, ArrowRight } from 'lucide-react';
+import { useLanguage } from '../../i18n';
 
 export default function HowItWorks({ onStartDebating }) {
+  const { t } = useLanguage();
+
   const steps = [
     {
       num: "01",
-      title: "CHOOSE A MOTION",
-      desc: "Pick from curated philosophical, technological, and societal dilemmas, or propose your own custom motion.",
+      title: t('landing.howItWorks.step1Title'),
+      desc: t('landing.howItWorks.step1Desc'),
       icon: Target,
-      tag: "TOPIC SELECTION",
+      tag: t('landing.howItWorks.step1Tag'),
       accent: "from-[#7C3AED] to-[#8B5CF6]"
     },
     {
       num: "02",
-      title: "TAKE A SIDE",
-      desc: "Stake your ground — FOR or AGAINST. Select your AI adversary's demeanor from Debate Newbie to Ruthless Lawyer.",
+      title: t('landing.howItWorks.step2Title'),
+      desc: t('landing.howItWorks.step2Desc'),
       icon: Scale,
-      tag: "STANCE & DIFFICULTY",
+      tag: t('landing.howItWorks.step2Tag'),
       accent: "from-[#6366F1] to-[#7C3AED]"
     },
     {
       num: "03",
-      title: "FACE AI",
-      desc: "Exchange arguments across structured rounds. AI analyzes premises, attacks weak evidence, and issues surgical counterpoints.",
+      title: t('landing.howItWorks.step3Title'),
+      desc: t('landing.howItWorks.step3Desc'),
       icon: Zap,
-      tag: "ADVERSARIAL ROUNDS",
+      tag: t('landing.howItWorks.step3Tag'),
       accent: "from-[#22D3EE] to-[#0284C7]"
     },
     {
       num: "04",
-      title: "ANALYZE",
-      desc: "Receive comprehensive cognitive evaluations, fallacy diagnostics, and radar breakdowns of your logical persuasion.",
+      title: t('landing.howItWorks.step4Title'),
+      desc: t('landing.howItWorks.step4Desc'),
       icon: BarChart2,
-      tag: "PERFORMANCE REPORT",
+      tag: t('landing.howItWorks.step4Tag'),
       accent: "from-emerald-400 to-teal-500"
     }
   ];
@@ -44,15 +47,15 @@ export default function HowItWorks({ onStartDebating }) {
         <div className="text-center max-w-2xl mx-auto mb-16 sm:mb-20">
           <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-white/[0.04] border border-white/[0.08] text-[11px] font-mono uppercase tracking-widest text-[#A1A1AA] mb-4">
             <Zap className="w-3.5 h-3.5 text-[#22D3EE]" />
-            <span>THE 4-STEP ARENA</span>
+            <span>{t('landing.howItWorks.badge')}</span>
           </div>
 
           <h2 className="text-3xl sm:text-5xl font-bold tracking-tight text-[#F5F5F7]">
-            "Enter the arena."
+            {t('landing.howItWorks.title')}
           </h2>
 
           <p className="mt-4 text-base text-[#A1A1AA]">
-            From opening premise to closing critique in four rigorous steps.
+            {t('landing.howItWorks.subtitle')}
           </p>
         </div>
 
@@ -91,7 +94,9 @@ export default function HowItWorks({ onStartDebating }) {
 
                 {/* Subtle indicator bar */}
                 <div className="mt-6 pt-4 border-t border-white/[0.06] flex items-center justify-between text-xs">
-                  <span className="font-mono text-[10px] text-[#52525B]">STEP {step.num} / 04</span>
+                  <span className="font-mono text-[10px] text-[#52525B]">
+                    {t('landing.howItWorks.stepLabel', { num: step.num })}
+                  </span>
                   <div className="w-6 h-0.5 bg-gradient-to-r from-transparent to-white/[0.2] group-hover:to-[#7C3AED] transition-all" />
                 </div>
               </div>
@@ -106,7 +111,7 @@ export default function HowItWorks({ onStartDebating }) {
             onClick={onStartDebating}
             className="inline-flex items-center gap-2 px-6 py-2.5 rounded-lg bg-white/[0.04] hover:bg-white/[0.08] border border-white/[0.08] hover:border-white/[0.16] text-xs font-mono text-[#F5F5F7] transition-all hover:-translate-y-0.5"
           >
-            <span>SELECT YOUR FIRST TOPIC</span>
+            <span>{t('landing.howItWorks.selectFirstTopic')}</span>
             <ArrowRight className="w-3.5 h-3.5 text-[#22D3EE]" />
           </button>
         </div>

@@ -3,7 +3,7 @@ import { Swords, Menu, X, ArrowRight, Sun, Moon, Globe, User, History } from 'lu
 import { useLanguage, SUPPORTED_LANGUAGES } from '../../i18n';
 
 export default function Navbar({ onStartDebating, onNavigate, theme, onToggleTheme, user, isAuthenticated }) {
-  const { language, setLanguage } = useLanguage();
+  const { language, setLanguage, t } = useLanguage();
   const [isScrolled, setIsScrolled] = useState(false);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [isLangDropdownOpen, setIsLangDropdownOpen] = useState(false);
@@ -66,35 +66,35 @@ export default function Navbar({ onStartDebating, onNavigate, theme, onToggleThe
               onClick={(e) => handleNavClick(e, 'debate-demo')}
               className="hover:text-[#F5F5F7] transition-colors"
             >
-              Debate
+              {t('landing.nav.debate')}
             </a>
             <a
               href="#how-it-works"
               onClick={(e) => handleNavClick(e, 'how-it-works')}
               className="hover:text-[#F5F5F7] transition-colors"
             >
-              How It Works
+              {t('landing.nav.howItWorks')}
             </a>
             <a
               href="#intelligence"
               onClick={(e) => handleNavClick(e, 'intelligence')}
               className="hover:text-[#F5F5F7] transition-colors"
             >
-              Intelligence
+              {t('landing.nav.intelligence')}
             </a>
             <a
               href="#voice"
               onClick={(e) => handleNavClick(e, 'voice')}
               className="hover:text-[#F5F5F7] transition-colors"
             >
-              Voice Arena
+              {t('landing.nav.voice')}
             </a>
             <a
               href="#topics"
               onClick={(e) => handleNavClick(e, 'topics')}
               className="hover:text-[#F5F5F7] transition-colors"
             >
-              Motions
+              {t('landing.nav.motions')}
             </a>
           </nav>
 
@@ -159,7 +159,7 @@ export default function Navbar({ onStartDebating, onNavigate, theme, onToggleThe
                 className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-md text-xs font-medium text-[#A1A1AA] hover:text-[#F5F5F7] bg-white/[0.03] border border-white/[0.08] hover:border-white/[0.15] transition-colors"
               >
                 <History className="w-3.5 h-3.5 text-[#22D3EE]" />
-                <span>History</span>
+                <span>{t('landing.nav.history')}</span>
               </button>
             ) : (
               <button
@@ -168,7 +168,7 @@ export default function Navbar({ onStartDebating, onNavigate, theme, onToggleThe
                 className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-md text-xs font-medium text-[#A1A1AA] hover:text-[#F5F5F7] hover:bg-white/[0.04] transition-colors"
               >
                 <User className="w-3.5 h-3.5" />
-                <span>Sign In</span>
+                <span>{t('landing.nav.signIn')}</span>
               </button>
             )}
 
@@ -178,7 +178,7 @@ export default function Navbar({ onStartDebating, onNavigate, theme, onToggleThe
               onClick={onStartDebating}
               className="inline-flex items-center gap-1.5 px-4 py-1.5 rounded-md bg-gradient-to-r from-[#7C3AED] to-[#6366F1] hover:from-[#6D28D9] hover:to-[#4F46E5] text-white font-medium text-xs shadow-md shadow-[#7C3AED]/25 transition-all duration-300 hover:shadow-lg hover:shadow-[#7C3AED]/35 hover:-translate-y-0.5 active:translate-y-0"
             >
-              <span>Start Debating</span>
+              <span>{t('landing.nav.startDebating')}</span>
               <ArrowRight className="w-3.5 h-3.5" />
             </button>
           </div>
@@ -190,7 +190,7 @@ export default function Navbar({ onStartDebating, onNavigate, theme, onToggleThe
               onClick={onStartDebating}
               className="px-3 py-1.5 rounded-md bg-gradient-to-r from-[#7C3AED] to-[#6366F1] text-white font-medium text-xs shadow-sm"
             >
-              Debate
+              {t('landing.nav.debate')}
             </button>
             <button
               type="button"
@@ -212,35 +212,35 @@ export default function Navbar({ onStartDebating, onNavigate, theme, onToggleThe
                 onClick={(e) => handleNavClick(e, 'debate-demo')}
                 className="hover:text-[#F5F5F7] py-1"
               >
-                Debate Arena
+                {t('landing.nav.debate')}
               </a>
               <a
                 href="#how-it-works"
                 onClick={(e) => handleNavClick(e, 'how-it-works')}
                 className="hover:text-[#F5F5F7] py-1"
               >
-                How It Works
+                {t('landing.nav.howItWorks')}
               </a>
               <a
                 href="#intelligence"
                 onClick={(e) => handleNavClick(e, 'intelligence')}
                 className="hover:text-[#F5F5F7] py-1"
               >
-                Debate Intelligence
+                {t('landing.nav.intelligence')}
               </a>
               <a
                 href="#voice"
                 onClick={(e) => handleNavClick(e, 'voice')}
                 className="hover:text-[#F5F5F7] py-1"
               >
-                Voice Debate
+                {t('landing.nav.voice')}
               </a>
               <a
                 href="#topics"
                 onClick={(e) => handleNavClick(e, 'topics')}
                 className="hover:text-[#F5F5F7] py-1"
               >
-                Motions Explorer
+                {t('landing.nav.motions')}
               </a>
             </div>
 
@@ -277,7 +277,7 @@ export default function Navbar({ onStartDebating, onNavigate, theme, onToggleThe
                     onClick={() => onNavigate('/history')}
                     className="text-[#22D3EE] font-medium"
                   >
-                    History
+                    {t('landing.nav.history')}
                   </button>
                 ) : (
                   <button
@@ -285,7 +285,7 @@ export default function Navbar({ onStartDebating, onNavigate, theme, onToggleThe
                     onClick={() => onNavigate('/login')}
                     className="text-[#A1A1AA] hover:text-white"
                   >
-                    Sign In
+                    {t('landing.nav.signIn')}
                   </button>
                 )}
               </div>

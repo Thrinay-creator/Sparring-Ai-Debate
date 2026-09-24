@@ -1,7 +1,9 @@
 import React, { useState } from 'react';
 import { Send, Mic, Sparkles, User, Cpu, RotateCcw, ArrowRight, CheckCircle2 } from 'lucide-react';
+import { useLanguage } from '../../i18n';
 
 export default function InteractiveDemo({ onStartDebateWithTopic }) {
+  const { t } = useLanguage();
   const [stance, setStance] = useState('FOR');
   const [argumentText, setArgumentText] = useState('');
   const [isProcessing, setIsProcessing] = useState(false);
@@ -95,15 +97,15 @@ export default function InteractiveDemo({ onStartDebateWithTopic }) {
         <div className="text-center max-w-2xl mx-auto mb-12">
           <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-white/[0.04] border border-white/[0.08] text-[11px] font-mono uppercase tracking-widest text-[#A1A1AA] mb-4">
             <Sparkles className="w-3.5 h-3.5 text-[#7C3AED]" />
-            <span>INTERACTIVE SIMULATION</span>
+            <span>{t('landing.demo.badge')}</span>
           </div>
 
           <h2 className="text-3xl sm:text-5xl font-bold tracking-tight text-[#F5F5F7]">
-            "See Sparring in action."
+            {t('landing.demo.title')}
           </h2>
 
           <p className="mt-3 text-base text-[#A1A1AA]">
-            Test your counter-rebuttals in this live interactive demo arena.
+            {t('landing.demo.subtitle')}
           </p>
         </div>
 
@@ -113,7 +115,7 @@ export default function InteractiveDemo({ onStartDebateWithTopic }) {
           <div className="px-5 py-4 border-b border-white/[0.08] bg-white/[0.02] flex flex-wrap items-center justify-between gap-3">
             <div>
               <span className="font-mono text-[10px] uppercase tracking-wider text-[#71717A] block">
-                TRIAL MOTION
+                {t('landing.demo.motionLabel')}
               </span>
               <h3 className="text-sm sm:text-base font-semibold text-[#F5F5F7]">
                 "Should college education be free?"
@@ -131,7 +133,7 @@ export default function InteractiveDemo({ onStartDebateWithTopic }) {
                     : 'text-[#71717A] hover:text-[#A1A1AA]'
                 }`}
               >
-                YOU ARE: FOR
+                {t('landing.demo.forOption')}
               </button>
               <button
                 type="button"
@@ -142,7 +144,7 @@ export default function InteractiveDemo({ onStartDebateWithTopic }) {
                     : 'text-[#71717A] hover:text-[#A1A1AA]'
                 }`}
               >
-                YOU ARE: AGAINST
+                {t('landing.demo.againstOption')}
               </button>
             </div>
           </div>
@@ -176,7 +178,7 @@ export default function InteractiveDemo({ onStartDebateWithTopic }) {
                   </div>
                   {item.score && (
                     <span className="font-mono text-[10px] text-emerald-400 font-medium">
-                      EVALUATION SCORE: {item.score}%
+                      {t('landing.demo.simulatedScore', { score: item.score })}
                     </span>
                   )}
                 </div>
@@ -222,7 +224,7 @@ export default function InteractiveDemo({ onStartDebateWithTopic }) {
                 type="text"
                 value={argumentText}
                 onChange={(e) => setArgumentText(e.target.value)}
-                placeholder="Type your rebuttal to the AI adversary..."
+                placeholder={t('landing.demo.placeholder')}
                 disabled={isProcessing}
                 className="flex-1 px-4 py-2.5 rounded-lg bg-black/40 border border-white/[0.1] text-xs sm:text-sm text-[#F5F5F7] placeholder-[#71717A] focus:outline-none focus:border-[#7C3AED] transition-colors"
               />
@@ -232,7 +234,7 @@ export default function InteractiveDemo({ onStartDebateWithTopic }) {
                 disabled={!argumentText.trim() || isProcessing}
                 className="inline-flex items-center gap-1.5 px-4 py-2.5 rounded-lg bg-gradient-to-r from-[#7C3AED] to-[#6366F1] text-white font-medium text-xs shadow-md shadow-[#7C3AED]/20 hover:shadow-lg hover:shadow-[#7C3AED]/30 transition-all disabled:opacity-40"
               >
-                <span>Send</span>
+                <span>{t('landing.demo.send')}</span>
                 <Send className="w-3.5 h-3.5" />
               </button>
             </form>
@@ -241,14 +243,14 @@ export default function InteractiveDemo({ onStartDebateWithTopic }) {
           {/* Full Arena Switcher */}
           <div className="px-5 py-3 bg-black/50 border-t border-white/[0.06] flex items-center justify-between text-xs">
             <span className="text-[#71717A] font-mono text-[11px]">
-              Ready for a full 6-round scored debate?
+              {t('landing.demo.readyToStart')}
             </span>
             <button
               type="button"
               onClick={() => onStartDebateWithTopic("Should college education be free?")}
               className="inline-flex items-center gap-1 font-mono text-xs text-[#22D3EE] hover:underline"
             >
-              <span>Launch Full Debate Chamber</span>
+              <span>{t('landing.demo.launchWithMotion')}</span>
               <ArrowRight className="w-3.5 h-3.5" />
             </button>
           </div>

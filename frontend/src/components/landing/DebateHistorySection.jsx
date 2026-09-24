@@ -1,37 +1,40 @@
 import React from 'react';
 import { History, Award, CheckCircle, ArrowRight, Clock, ShieldCheck } from 'lucide-react';
+import { useLanguage } from '../../i18n';
 
 export default function DebateHistorySection({ onNavigate, isAuthenticated }) {
+  const { t } = useLanguage();
+
   const sampleDebates = [
     {
       topic: "AI & Higher Education",
-      stance: "AGAINST",
+      stance: t('debate.against') || "AGAINST",
       rounds: "8 ROUNDS",
-      metricName: "Argument Strength",
+      metricName: t('landing.visual.strength'),
       metricValue: "86%",
-      timeAgo: "2 days ago",
-      fallaciesFound: "0 fallacies",
-      verdict: "STRONG DEFENSE"
+      timeAgo: t('landing.history.daysAgo', { count: 2 }),
+      fallaciesFound: t('landing.history.fallaciesFound'),
+      verdict: t('landing.history.strongDefense')
     },
     {
       topic: "Social Media Age Restraints",
-      stance: "FOR",
+      stance: t('debate.for') || "FOR",
       rounds: "6 ROUNDS",
-      metricName: "Rebuttal Precision",
+      metricName: t('landing.visual.rebuttal'),
       metricValue: "91%",
-      timeAgo: "5 days ago",
-      fallaciesFound: "1 fallacy flagged",
-      verdict: "MASTER CLASS"
+      timeAgo: t('landing.history.daysAgo', { count: 5 }),
+      fallaciesFound: t('landing.history.fallacyFlagged'),
+      verdict: t('landing.history.masterClass')
     },
     {
       topic: "Remote Work & Global Labor",
-      stance: "FOR",
+      stance: t('debate.for') || "FOR",
       rounds: "6 ROUNDS",
-      metricName: "Evidence Quality",
+      metricName: t('landing.visual.evidence'),
       metricValue: "82%",
-      timeAgo: "1 week ago",
-      fallaciesFound: "0 fallacies",
-      verdict: "RESILIENT"
+      timeAgo: t('landing.history.weekAgo'),
+      fallaciesFound: t('landing.history.fallaciesFound'),
+      verdict: t('landing.history.resilient')
     }
   ];
 
@@ -43,15 +46,15 @@ export default function DebateHistorySection({ onNavigate, isAuthenticated }) {
           <div>
             <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-white/[0.04] border border-white/[0.08] text-[11px] font-mono uppercase tracking-widest text-[#A1A1AA] mb-4">
               <History className="w-3.5 h-3.5 text-[#A78BFA]" />
-              <span>PERSISTENT COGNITIVE RECORD</span>
+              <span>{t('landing.history.badge')}</span>
             </div>
 
             <h2 className="text-3xl sm:text-5xl font-bold tracking-tight text-[#F5F5F7]">
-              "Track your intellectual evolution."
+              {t('landing.history.title')}
             </h2>
 
             <p className="mt-3 text-base text-[#A1A1AA]">
-              Review past rounds, analyze previous fallacies, and track your scoring trends over time.
+              {t('landing.history.subtitle')}
             </p>
           </div>
 
@@ -61,12 +64,12 @@ export default function DebateHistorySection({ onNavigate, isAuthenticated }) {
               onClick={() => onNavigate('/history')}
               className="inline-flex items-center gap-2 px-5 py-2.5 rounded-lg bg-white/[0.05] hover:bg-white/[0.1] border border-white/[0.1] text-xs font-mono text-[#22D3EE] transition-all hover:-translate-y-0.5"
             >
-              <span>VIEW YOUR LIVE DEBATE HISTORY</span>
+              <span>{t('landing.history.viewLiveHistory')}</span>
               <ArrowRight className="w-3.5 h-3.5" />
             </button>
           ) : (
             <span className="font-mono text-xs text-[#71717A]">
-              SAMPLE DEBATE LOGS
+              {t('landing.history.sampleLogs')}
             </span>
           )}
         </div>

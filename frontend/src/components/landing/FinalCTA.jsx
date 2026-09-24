@@ -1,7 +1,10 @@
 import React from 'react';
 import { ArrowRight, Swords, Sparkles } from 'lucide-react';
+import { useLanguage } from '../../i18n';
 
 export default function FinalCTA({ onStartDebating }) {
+  const { t } = useLanguage();
+
   return (
     <section className="relative py-28 sm:py-36 overflow-hidden">
       {/* Background radial spotlight glow */}
@@ -16,11 +19,11 @@ export default function FinalCTA({ onStartDebating }) {
         </div>
 
         <h2 className="text-3xl sm:text-5xl lg:text-6xl font-bold tracking-tight text-[#F5F5F7] leading-tight">
-          "Your next argument starts here."
+          {t('landing.finalCta.title')}
         </h2>
 
         <p className="mt-5 text-base sm:text-lg text-[#A1A1AA] max-w-xl mx-auto">
-          Choose a motion. Take a side. See how well you can defend it.
+          {t('landing.finalCta.subtitle')}
         </p>
 
         <div className="mt-10">
@@ -29,13 +32,13 @@ export default function FinalCTA({ onStartDebating }) {
             onClick={onStartDebating}
             className="inline-flex items-center gap-2.5 px-8 py-3.5 rounded-xl bg-gradient-to-r from-[#7C3AED] to-[#6366F1] hover:from-[#6D28D9] hover:to-[#4F46E5] text-white font-medium text-sm shadow-xl shadow-[#7C3AED]/35 transition-all duration-300 hover:shadow-2xl hover:shadow-[#7C3AED]/50 hover:-translate-y-1 active:translate-y-0 group"
           >
-            <span>START YOUR FIRST DEBATE</span>
+            <span>{t('landing.finalCta.startFirstDebate')}</span>
             <ArrowRight className="w-4 h-4 transition-transform duration-300 group-hover:translate-x-1.5" />
           </button>
         </div>
 
         <p className="mt-5 text-xs font-mono text-[#71717A]">
-          No setup required. Instant AI sparring in your browser.
+          {t('landing.finalCta.noSetup')}
         </p>
       </div>
     </section>

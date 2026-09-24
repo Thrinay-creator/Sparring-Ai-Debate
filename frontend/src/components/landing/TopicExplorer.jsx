@@ -1,7 +1,9 @@
 import React, { useState } from 'react';
 import { Compass, ArrowRight, Sparkles, Filter } from 'lucide-react';
+import { useLanguage } from '../../i18n';
 
 export default function TopicExplorer({ onStartDebateWithTopic }) {
+  const { t } = useLanguage();
   const [activeCategory, setActiveCategory] = useState('ALL');
 
   const categories = ['ALL', 'TECHNOLOGY', 'SOCIETY', 'EDUCATION', 'BUSINESS', 'ETHICS'];
@@ -62,15 +64,15 @@ export default function TopicExplorer({ onStartDebateWithTopic }) {
         <div className="text-center max-w-2xl mx-auto mb-12">
           <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-white/[0.04] border border-white/[0.08] text-[11px] font-mono uppercase tracking-widest text-[#A1A1AA] mb-4">
             <Compass className="w-3.5 h-3.5 text-[#22D3EE]" />
-            <span>CURATED MOTIONS</span>
+            <span>{t('landing.topics.badge')}</span>
           </div>
 
           <h2 className="text-3xl sm:text-5xl font-bold tracking-tight text-[#F5F5F7]">
-            "Explore the battlegrounds."
+            {t('landing.topics.title')}
           </h2>
 
           <p className="mt-4 text-base sm:text-lg text-[#A1A1AA]">
-            Choose a controversial premise, take a stand, and test your defense against our AI adversary.
+            {t('landing.topics.subtitle')}
           </p>
         </div>
 
@@ -87,7 +89,7 @@ export default function TopicExplorer({ onStartDebateWithTopic }) {
                   : 'bg-white/[0.02] text-[#71717A] hover:text-[#A1A1AA] border border-white/[0.05]'
               }`}
             >
-              {cat}
+              {cat === 'ALL' ? t('landing.topics.all') : cat}
             </button>
           ))}
         </div>
@@ -120,7 +122,7 @@ export default function TopicExplorer({ onStartDebateWithTopic }) {
               </div>
 
               <div className="pt-4 border-t border-white/[0.06] flex items-center justify-between text-xs font-mono text-[#A1A1AA] group-hover:text-[#22D3EE] transition-colors">
-                <span>START THIS DEBATE</span>
+                <span>{t('landing.topics.challengeMotion')}</span>
                 <ArrowRight className="w-4 h-4 transition-transform duration-300 group-hover:translate-x-1.5" />
               </div>
             </div>

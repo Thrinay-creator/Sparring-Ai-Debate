@@ -1,7 +1,10 @@
 import React from 'react';
 import { Swords, Github, ExternalLink, Globe2 } from 'lucide-react';
+import { useLanguage } from '../../i18n';
 
 export default function Footer({ onStartDebating, onNavigate }) {
+  const { t } = useLanguage();
+
   return (
     <footer className="relative border-t border-white/[0.08] bg-[#050507] py-16 text-xs text-[#71717A]">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
@@ -20,7 +23,7 @@ export default function Footer({ onStartDebating, onNavigate }) {
             </div>
 
             <p className="text-sm text-[#A1A1AA] max-w-sm leading-relaxed">
-              "Think sharper. Debate smarter." An adversarial AI platform built to stress-test your logic, detect fallacies, and sharpen intellectual clarity.
+              {t('landing.footer.tagline')}
             </p>
 
             <div className="pt-2 flex items-center gap-3">
@@ -40,7 +43,7 @@ export default function Footer({ onStartDebating, onNavigate }) {
           {/* Product Links */}
           <div className="space-y-3">
             <h4 className="font-mono text-[11px] uppercase tracking-widest text-[#F5F5F7]">
-              Product
+              {t('landing.footer.product')}
             </h4>
             <ul className="space-y-2">
               <li>
@@ -49,27 +52,27 @@ export default function Footer({ onStartDebating, onNavigate }) {
                   onClick={onStartDebating}
                   className="hover:text-[#F5F5F7] transition-colors"
                 >
-                  Debate Arena
+                  {t('landing.footer.debateArena')}
                 </button>
               </li>
               <li>
                 <a href="#how-it-works" className="hover:text-[#F5F5F7] transition-colors">
-                  How It Works
+                  {t('landing.footer.howItWorks')}
                 </a>
               </li>
               <li>
                 <a href="#intelligence" className="hover:text-[#F5F5F7] transition-colors">
-                  Debate Intelligence
+                  {t('landing.footer.intelligence')}
                 </a>
               </li>
               <li>
                 <a href="#voice" className="hover:text-[#F5F5F7] transition-colors">
-                  Voice Synthesis
+                  {t('landing.footer.voiceSynthesis')}
                 </a>
               </li>
               <li>
                 <a href="#topics" className="hover:text-[#F5F5F7] transition-colors">
-                  Curated Motions
+                  {t('landing.footer.curatedMotions')}
                 </a>
               </li>
             </ul>
@@ -78,12 +81,12 @@ export default function Footer({ onStartDebating, onNavigate }) {
           {/* Resources */}
           <div className="space-y-3">
             <h4 className="font-mono text-[11px] uppercase tracking-widest text-[#F5F5F7]">
-              Resources
+              {t('landing.footer.resources')}
             </h4>
             <ul className="space-y-2">
               <li>
                 <a href="#about" className="hover:text-[#F5F5F7] transition-colors">
-                  Philosophy
+                  {t('landing.footer.philosophy')}
                 </a>
               </li>
               <li>
@@ -93,7 +96,7 @@ export default function Footer({ onStartDebating, onNavigate }) {
                   rel="noreferrer"
                   className="hover:text-[#F5F5F7] transition-colors"
                 >
-                  Documentation
+                  {t('landing.footer.documentation')}
                 </a>
               </li>
               <li>
@@ -102,7 +105,7 @@ export default function Footer({ onStartDebating, onNavigate }) {
                   onClick={() => onNavigate('/history')}
                   className="hover:text-[#F5F5F7] transition-colors"
                 >
-                  Debate Logs
+                  {t('landing.footer.history')}
                 </button>
               </li>
             </ul>
@@ -119,7 +122,7 @@ export default function Footer({ onStartDebating, onNavigate }) {
                 <span>AI Gateway: Online</span>
               </li>
               <li>
-                <span className="text-[#71717A]">Gemini / Groq Failover</span>
+                <span className="text-[#71717A]">Gemini / Groq / Mistral Failover</span>
               </li>
               <li>
                 <span className="text-[#71717A]">Multi-Language Ready</span>
@@ -130,7 +133,7 @@ export default function Footer({ onStartDebating, onNavigate }) {
 
         {/* Bottom copyright */}
         <div className="pt-8 flex flex-col sm:flex-row items-center justify-between gap-4 font-mono text-[11px]">
-          <span>© 2026 Sparring. Built for intellectual rigor.</span>
+          <span>© 2026 Sparring. {t('landing.footer.allRightsReserved')}</span>
           <div className="flex items-center gap-6">
             <span className="text-[#52525B]">Privacy Focused</span>
             <span className="text-[#52525B]">Zero Data Training</span>

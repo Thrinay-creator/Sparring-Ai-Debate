@@ -1,39 +1,42 @@
 import React from 'react';
 import { Cpu, Mic, Globe2, BarChart3, CheckCircle } from 'lucide-react';
+import { useLanguage } from '../../i18n';
 
 export default function TrustStrip() {
+  const { t } = useLanguage();
+
   const capabilities = [
     {
-      label: "REAL-TIME",
-      title: "AI Debate Engine",
-      desc: "Instant opposing arguments tailored to your stance",
+      label: t('landing.trust.cap1Label'),
+      title: t('landing.trust.cap1Title'),
+      desc: t('landing.trust.cap1Desc'),
       icon: Cpu,
       accent: "text-[#7C3AED]",
       bg: "bg-[#7C3AED]/10",
       border: "border-[#7C3AED]/20"
     },
     {
-      label: "VOICE",
-      title: "Live Speech & Audio",
-      desc: "Speak naturally and listen to spoken AI rebuttals",
+      label: t('landing.trust.cap2Label'),
+      title: t('landing.trust.cap2Title'),
+      desc: t('landing.trust.cap2Desc'),
       icon: Mic,
       accent: "text-[#22D3EE]",
       bg: "bg-[#22D3EE]/10",
       border: "border-[#22D3EE]/20"
     },
     {
-      label: "MULTILINGUAL",
-      title: "English, Telugu, Hindi",
-      desc: "Native debate reasoning across multiple languages",
+      label: t('landing.trust.cap3Label'),
+      title: t('landing.trust.cap3Title'),
+      desc: t('landing.trust.cap3Desc'),
       icon: Globe2,
       accent: "text-[#6366F1]",
       bg: "bg-[#6366F1]/10",
       border: "border-[#6366F1]/20"
     },
     {
-      label: "ANALYTICS",
-      title: "Fallacy & Logic Radar",
-      desc: "Automated scoring across evidence, logic, and persuasion",
+      label: t('landing.trust.cap4Label'),
+      title: t('landing.trust.cap4Title'),
+      desc: t('landing.trust.cap4Desc'),
       icon: BarChart3,
       accent: "text-emerald-400",
       bg: "bg-emerald-500/10",
@@ -46,7 +49,7 @@ export default function TrustStrip() {
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="text-center mb-8">
           <p className="font-mono text-[11px] uppercase tracking-widest text-[#71717A]">
-            BUILT FOR PEOPLE WHO WANT TO THINK BETTER
+            {t('landing.trust.tagline')}
           </p>
         </div>
 

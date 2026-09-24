@@ -1,29 +1,31 @@
 import React, { useState, useEffect } from 'react';
 import { Sparkles, ShieldAlert, Cpu, User, ArrowRight, Activity, CheckCircle2 } from 'lucide-react';
+import { useLanguage } from '../../i18n';
 
 export default function HeroDebateVisual() {
+  const { t } = useLanguage();
   const [activeTab, setActiveTab] = useState(0);
   const [typedChars, setTypedChars] = useState(0);
   const [isTyping, setIsTyping] = useState(true);
 
   const debateRounds = [
     {
-      motion: "Should artificial intelligence replace traditional education?",
-      userStance: "FOR",
-      aiStance: "AGAINST",
-      userArg: "AI can personalize education at a scale human teachers cannot, adapting to individual pacing and removing socioeconomic barriers.",
-      aiCounter: "Personalization alone doesn't guarantee understanding. Human teachers provide contextual empathy, moral reasoning, and collaborative social dynamics that software cannot replicate.",
+      motion: t('landing.visual.motion1'),
+      userStance: t('debate.for') || "FOR",
+      aiStance: t('debate.against') || "AGAINST",
+      userArg: t('landing.visual.userArg1'),
+      aiCounter: t('landing.visual.aiCounter1'),
       metrics: { strength: 86, evidence: 78, rebuttal: 91 },
-      status: "AI COUNTER-ARGUMENT VERIFIED"
+      status: t('landing.visual.verified')
     },
     {
-      motion: "Should companies adopt a mandatory 4-day workweek?",
-      userStance: "FOR",
-      aiStance: "AGAINST",
-      userArg: "Compressed schedules boost focused productivity, reduce chronic burnout, and measurably elevate employee retention rates.",
-      aiCounter: "While knowledge sectors benefit, service economies face severe coverage shortfalls. Without matching productivity gains, labor costs rise and service access diminishes.",
+      motion: t('landing.visual.motion2'),
+      userStance: t('debate.for') || "FOR",
+      aiStance: t('debate.against') || "AGAINST",
+      userArg: t('landing.visual.userArg2'),
+      aiCounter: t('landing.visual.aiCounter2'),
       metrics: { strength: 89, evidence: 82, rebuttal: 88 },
-      status: "AI REBUTTAL SYNTHESIZED"
+      status: t('landing.visual.synthesized')
     }
   ];
 
@@ -65,14 +67,14 @@ export default function HeroDebateVisual() {
             <span className="ml-2 font-mono text-[11px] uppercase tracking-wider text-[#A1A1AA] flex items-center gap-1.5">
               <span className="text-[#F5F5F7] font-semibold">SPARRING</span>
               <span className="text-[#52525B]">/</span>
-              <span>LIVE DEBATE</span>
+              <span>{t('landing.visual.liveDebate')}</span>
             </span>
           </div>
 
           <div className="flex items-center gap-3">
             <div className="flex items-center gap-1.5 px-2 py-0.5 rounded-full bg-[#22D3EE]/10 border border-[#22D3EE]/20 text-[10px] font-mono text-[#22D3EE]">
               <span className="w-1.5 h-1.5 rounded-full bg-[#22D3EE] animate-ping" />
-              <span>ROUND 01 / 06</span>
+              <span>{t('landing.visual.round')}</span>
             </div>
 
             {/* Switch tabs to demo another debate */}
@@ -171,7 +173,7 @@ export default function HeroDebateVisual() {
           <div className="flex items-center gap-4 sm:gap-6 text-xs">
             <div className="space-y-1">
               <div className="flex items-center justify-between gap-2 font-mono text-[10px] text-[#71717A]">
-                <span>ARGUMENT STRENGTH</span>
+                <span>{t('landing.visual.strength')}</span>
                 <span className="text-[#22D3EE] font-bold">{currentRound.metrics.strength}%</span>
               </div>
               <div className="w-20 sm:w-28 h-1 bg-white/[0.08] rounded-full overflow-hidden">
@@ -184,7 +186,7 @@ export default function HeroDebateVisual() {
 
             <div className="space-y-1">
               <div className="flex items-center justify-between gap-2 font-mono text-[10px] text-[#71717A]">
-                <span>EVIDENCE</span>
+                <span>{t('landing.visual.evidence')}</span>
                 <span className="text-[#A78BFA] font-bold">{currentRound.metrics.evidence}%</span>
               </div>
               <div className="w-16 sm:w-24 h-1 bg-white/[0.08] rounded-full overflow-hidden">
@@ -197,7 +199,7 @@ export default function HeroDebateVisual() {
 
             <div className="space-y-1">
               <div className="flex items-center justify-between gap-2 font-mono text-[10px] text-[#71717A]">
-                <span>REBUTTAL</span>
+                <span>{t('landing.visual.rebuttal')}</span>
                 <span className="text-emerald-400 font-bold">{currentRound.metrics.rebuttal}%</span>
               </div>
               <div className="w-16 sm:w-24 h-1 bg-white/[0.08] rounded-full overflow-hidden">

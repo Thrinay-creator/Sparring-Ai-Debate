@@ -1,7 +1,9 @@
 import React, { useState } from 'react';
 import { Mic, Volume2, VolumeX, Sparkles, Activity, Play, Radio } from 'lucide-react';
+import { useLanguage } from '../../i18n';
 
 export default function VoiceSection({ speech }) {
+  const { t } = useLanguage();
   const [isPlayingDemo, setIsPlayingDemo] = useState(false);
   const voiceSpeed = speech?.voiceSpeed || 1.0;
 
@@ -26,15 +28,15 @@ export default function VoiceSection({ speech }) {
         <div className="text-center max-w-2xl mx-auto mb-16">
           <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-white/[0.04] border border-white/[0.08] text-[11px] font-mono uppercase tracking-widest text-[#A1A1AA] mb-4">
             <Radio className="w-3.5 h-3.5 text-[#22D3EE] animate-pulse" />
-            <span>REAL-TIME VOICE ARENA</span>
+            <span>{t('landing.voice.badge')}</span>
           </div>
 
           <h2 className="text-3xl sm:text-5xl font-bold tracking-tight text-[#F5F5F7]">
-            "Speak your argument."
+            {t('landing.voice.title')}
           </h2>
 
           <p className="mt-4 text-base sm:text-lg text-[#A1A1AA]">
-            Debate naturally with voice input and AI voice responses.
+            {t('landing.voice.subtitle')}
           </p>
         </div>
 
@@ -45,12 +47,12 @@ export default function VoiceSection({ speech }) {
             <div className="flex items-center gap-2.5">
               <span className="w-2.5 h-2.5 rounded-full bg-red-500 animate-ping" />
               <span className="font-mono text-xs uppercase tracking-wider text-[#F5F5F7] font-semibold">
-                VOICE STUDIO / LIVE
+                {t('landing.voice.liveStudio')}
               </span>
             </div>
 
             <div className="font-mono text-xs text-[#22D3EE] bg-cyan-950/60 px-2.5 py-1 rounded border border-cyan-800/50">
-              SESSION: 00:24
+              {t('landing.voice.session')}
             </div>
           </div>
 
@@ -67,7 +69,7 @@ export default function VoiceSection({ speech }) {
             </div>
 
             <span className="font-mono text-xs text-[#22D3EE] uppercase tracking-wider mb-2">
-              {isPlayingDemo ? "AI IS VOCALIZING REBUTTAL..." : "LISTENING TO DEBATER..."}
+              {isPlayingDemo ? t('landing.voice.vocalizing') : t('landing.voice.listening')}
             </span>
 
             {/* Audio Waveform Bars */}
@@ -85,7 +87,7 @@ export default function VoiceSection({ speech }) {
             </div>
 
             <p className="text-xs sm:text-sm text-[#A1A1AA] italic max-w-md">
-              "Your argument is being analyzed in real-time. The AI opponent evaluates premises before replying with natural voice."
+              {t('landing.voice.quote')}
             </p>
           </div>
 
@@ -93,7 +95,7 @@ export default function VoiceSection({ speech }) {
           <div className="pt-6 border-t border-white/[0.08] flex flex-wrap items-center justify-between gap-4">
             {/* Speed Selector */}
             <div className="flex items-center gap-2">
-              <span className="font-mono text-[11px] text-[#71717A] uppercase">SPEED:</span>
+              <span className="font-mono text-[11px] text-[#71717A] uppercase">{t('landing.voice.speed')}</span>
               <div className="flex items-center bg-white/[0.04] p-0.5 rounded-lg border border-white/[0.08]">
                 {[0.75, 1.0, 1.25, 1.5].map((speed) => (
                   <button
@@ -132,7 +134,7 @@ export default function VoiceSection({ speech }) {
                 className="inline-flex items-center gap-2 px-4 py-2 rounded-lg bg-white/[0.06] hover:bg-white/[0.1] border border-white/[0.1] text-xs font-mono text-[#F5F5F7] transition-all hover:-translate-y-0.5"
               >
                 <Play className="w-3.5 h-3.5 text-[#22D3EE]" />
-                <span>{isPlayingDemo ? "Playing Audio..." : "Test AI Voice Audio"}</span>
+                <span>{isPlayingDemo ? "Playing..." : t('landing.voice.sampleAudio')}</span>
               </button>
             </div>
           </div>

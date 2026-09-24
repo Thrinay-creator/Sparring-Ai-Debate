@@ -262,4 +262,20 @@ describe('Sparring API & Validation Tests', () => {
       });
     });
   });
+
+  describe('GET /api/tts Endpoint', () => {
+    it('rejects empty text query parameter with 400', async () => {
+      const res = await request(app).get('/api/tts');
+      expect(res.status).toBe(400);
+      expect(res.body.error).toContain('Text query parameter is required');
+    });
+
+    it('returns audio/mpeg stream for valid speech request', async () => {
+      const res = await request(app)
+        .get('/api/tts')
+        .query({ text: 'Sparring AI test statement.', lang: 'en' });
+      expect(res.status).toBe(200);
+      expect(res.headers['content-type']).toContain('audio/mpeg');
+    }, 15000);
+  });
 });
